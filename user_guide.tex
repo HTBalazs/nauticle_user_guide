@@ -1,0 +1,676 @@
+% A LaTeX (non-official) template for ISAE projects reports
+% Copyright (C) 2014 Damien Roque
+% Version: 0.2
+% Author: Damien Roque <damien.roque_AT_isae.fr>
+
+\newcommand{\nauticleversion}{1.0.170221}
+\newcommand{\installer}{install-\nauticleversion{}.sh}
+\newcommand{\uninstaller}{uninstall-\nauticleversion{}.sh}
+\newcommand{\execname}{\textbf{nausolve}}
+
+\documentclass[a4paper,12pt,openany]{book}
+% \documentclass[a4paper,12pt,openany]{paper}
+\usepackage{courier}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel} % If you write in English
+\usepackage{a4wide}
+\usepackage{graphicx}
+\graphicspath{{images/}}
+\usepackage{subfig}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\pgfplotsset{plot coordinates/math parser=false}
+\newlength\figureheight
+\newlength\figurewidth
+\pgfkeys{/pgf/number format/.cd,
+set decimal separator={,\!},
+1000 sep={\,},
+}
+\usepackage{ifthen}
+\usepackage{ifpdf}
+\ifpdf
+\usepackage[pdftex]{hyperref}
+\else
+\usepackage{hyperref}
+\fi
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily,
+  showstringspaces=false,
+  commentstyle=\color{red},
+  keywordstyle=\color{blue},
+  escapeinside={(*@}{@*)},
+}
+\usepackage[many]{tcolorbox}
+\usepackage{lipsum}
+\newtcbtheorem[]{example}{}{
+  breakable,
+  enhanced,
+  colback=blue!5,
+  colframe=blue!35!black,
+  fonttitle=\bfseries}{x}
+
+\hypersetup{%
+colorlinks=true,
+linkcolor=black,
+citecolor=black,
+urlcolor=black}
+\definecolor{nauticlegreen}{RGB}{153, 204, 0}
+\definecolor{nauticlegreen_dark}{RGB}{110, 150, 0}
+
+\renewcommand{\baselinestretch}{1.05}
+\renewcommand\thesection{\arabic{section}}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+
+\usepackage{amsthm}
+\usepackage{amssymb,amsmath,bbm}
+\usepackage{array}
+\usepackage{bm}
+\usepackage{multirow}
+\usepackage[footnote]{acronym}
+
+\newcommand*{\SET}[1]  {\ensuremath{\mathbf{#1}}}
+\newcommand*{\VEC}[1]  {\ensuremath{\boldsymbol{#1}}}
+\newcommand*{\FAM}[1]  {\ensuremath{\boldsymbol{#1}}}
+\newcommand*{\MAT}[1]  {\ensuremath{\boldsymbol{#1}}}
+\newcommand*{\OP}[1]  {\ensuremath{\mathrm{#1}}}
+\newcommand*{\NORM}[1]  {\ensuremath{\left\|#1\right\|}}
+\newcommand*{\DPR}[2]  {\ensuremath{\left \langle #1,#2 \right \rangle}}
+\newcommand*{\calbf}[1]  {\ensuremath{\boldsymbol{\mathcal{#1}}}}
+\newcommand*{\shift}[1]  {\ensuremath{\boldsymbol{#1}}}
+
+\newcommand{\eqdef}{\stackrel{\mathrm{def}}{=}}
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+\newcommand{\argmin}{\operatornamewithlimits{argmin}}
+\newcommand{\ud}{\, \mathrm{d}}
+\newcommand{\vect}{\text{Vect}}
+\newcommand{\sinc}{\ensuremath{\mathrm{sinc}}}
+\newcommand{\esp}{\ensuremath{\mathbb{E}}}
+\newcommand{\hilbert}{\ensuremath{\mathcal{H}}}
+\newcommand{\fourier}{\ensuremath{\mathcal{F}}}
+\newcommand{\sgn}{\text{sgn}}
+\newcommand{\intTT}{\int_{-T}^{T}}
+\newcommand{\intT}{\int_{-\frac{T}{2}}^{\frac{T}{2}}}
+\newcommand{\intinf}{\int_{-\infty}^{+\infty}}
+\newcommand{\Sh}{\ensuremath{\boldsymbol{S}}}
+\newcommand{\C}{\SET{C}}
+\newcommand{\R}{\SET{R}}
+\newcommand{\Z}{\SET{Z}}
+\newcommand{\N}{\SET{N}}
+\newcommand{\K}{\SET{K}}
+\newcommand{\reel}{\mathcal{R}}
+\newcommand{\imag}{\mathcal{I}}
+\newcommand{\cmnr}{c_{m,n}^\reel}
+\newcommand{\cmni}{c_{m,n}^\imag}
+\newcommand{\cnr}{c_{n}^\reel}
+\newcommand{\cni}{c_{n}^\imag}
+\newcommand{\tproto}{g}
+\newcommand{\rproto}{\check{g}}
+\newcommand{\LR}{\mathcal{L}_2(\SET{R})}
+\newcommand{\LZ}{\ell_2(\SET{Z})}
+\newcommand{\LZI}[1]{\ell_2(\SET{#1})}
+\newcommand{\LZZ}{\ell_2(\SET{Z}^2)}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\noise}{z}
+\newcommand{\Noise}{Z}
+\newcommand{\filtnoise}{\zeta}
+\newcommand{\tp}{g}
+\newcommand{\rp}{\check{g}}
+\newcommand{\TP}{G}
+\newcommand{\RP}{\check{G}}
+\newcommand{\dmin}{d_{\mathrm{min}}}
+\newcommand{\Dmin}{D_{\mathrm{min}}}
+\newcommand{\Image}{\ensuremath{\text{Im}}}
+\newcommand{\Span}{\ensuremath{\text{Span}}}
+\newcommand{\equref}[1]{(\ref{#1})}
+\newcommand{\myhref}[3][nauticlegreen_dark]{\href{#2}{\color{#1}{#3}}}%
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\puretext}[1]{\quad\textrm{#1}\quad}
+\newcommand{\myparagraph}[1]{\paragraph{#1}\mbox{}\\}
+\usepackage{mathtools}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+
+\newtheoremstyle{break}
+  {11pt}{11pt}%
+  {\itshape}{}%
+  {\bfseries}{}%
+  {\newline}{}%
+\theoremstyle{break}
+
+%\theoremstyle{definition}
+\newtheorem{definition}{Définition}[chapter]
+
+%\theoremstyle{definition}
+\newtheorem{theoreme}{Théorème}[chapter]
+
+%\theoremstyle{remark}
+\newtheorem{remarque}{Remarque}[chapter]
+
+%\theoremstyle{plain}
+\newtheorem{propriete}{Propriété}[chapter]
+\newtheorem{exemple}{Exemple}[chapter]
+
+\parskip=5pt
+%\sloppy
+
+\setcounter{secnumdepth}{5}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%
+%%% Title page %%%
+%%%%%%%%%%%%%%%%%%
+\frontmatter
+\begin{titlepage}
+\begin{center}
+\vspace{5cm}
+\includegraphics[width=0.6\textwidth]{nauticle_logo.pdf}\\[0.5cm]
+{\large A particle based meshless numerical computational environment}\\ [5cm]
+% Title
+{ \huge \bfseries User Guide for Nauticle \\[0.2cm] }
+\color{nauticlegreen}
+\rule{\linewidth}{1.5mm} \\[0.5cm]
+\color{black}
+{\large Nauticle version: \nauticleversion{} \\ \today}
+% Bottom of the page
+\vfill
+% Author and supervisor
+\noindent
+\begin{minipage}{1\textwidth}
+  \begin{flushright} \large
+    \emph{Author :}\\
+    Balázs TÓTH \\
+    Toth.Balazs@epito.bme.hu
+  \end{flushright}
+\end{minipage}
+\end{center}
+\end{titlepage}
+\clearpage\mbox{}\clearpage
+\chapter{Abstract}
+This manuscript provides a detailed introduction of the Nauticle solver. It contains an installation and calculation guide beside the presentation of the Nauticle interface. The latter allows any user to embed the solver with new particle-based schemes as interactions - or even arbitrary models considered as black boxes - without the deep insight to the core of the solver.
+
+\tableofcontents
+\newpage
+\mainmatter
+
+\section{Introduction}
+Due to their attractive properties, particle-based numerical methods enjoy increasing attention in many fields of engineering applications. In contrast with mesh-based methods  like finite element method, particle shemes have more flexible and adaptable spatial discretisation of the computational domain of any shape, especially in case of large deformations involving topology changes even with domain splitting [TODO].
+From the implementation point of view, most of the common features of particle-based numerical schemes are fundamentally different from mesh-based methods. Some of these differences are the lack of internodal structure (mesh), persistent changing of nodal connectivity, overlapping spatial covering of computational domain, and many further.
+
+During the past decades several meshless numerical solver like [TODO], successfully proved the reason of existence of particle methods. These tools have solved problems of free surface flows, fluid-solid interactions, crack growth and propagation in solid domain, underwater explosions, in which areas mesh-based methods usually suffer from serious bottlenecks. Furthermore, the naturally large requirement of computational performance can be compensated by the efficient massive parallelisation of computations on multicore CPU and GPU devices. However, most of these simulation tools are designed to depend on a certain particle scheme, moreover, the governing equations of the physical model is usually burried in the code. The lack of generality from both the physical model and the computational scheme point of view, results in a robust but rigid numerical engine with limited range of applications. % ok 
+
+To leap towards a more general formulation of computations, one needs to distinguish two aspects of generality. The first one is that it is inevitable to emerge the governing equations from the depth of the solver core to the user's level. Obviously, it requires a fundamentally different realisation of the solver but ensures higher flexibility at the same time. The second aspect is that the governing equations should be interpreted and discretised according to a suitable numerical method, consequently several different methods has to be implemented in the same environment. Using a proper formulation for the interface between the solver core, the different numerical schemes and the user-defined equations it turns out that a truly flexible meshless simulation tool can be established. Note that the existence of multipurpose schemes in a single environment significantly facilitates  not only the flexible modelling of almost arbitrary problems but the efficient simulation of coupled problems as well.
+
+Nauticle is a general-purpose open-source C++ scientific numerical environment and solver for the application and implementation of particle methods. The goal of the library is to  establish a particle-based numerical solver that can solve user-defined system of algebraic and differential equtions over a set of spatially distributed particles in one, two, or three dimensions with the most suitable numerical particle-schemes. Solutions can be governed by priori implemented schemes like SPH, DEM, etc.
+
+This manuscript is organised as follows: TODO
+
+\section{Methodology}
+\subsection{Particle methods}
+Several classification of particle methods exist based on different mathematical or physical aspects. From mathematical point of view we can distinguish methods that are operating on the strong form of PDE's from those that are solving the weak form of Partial Differential Equations (PDE's). Another classification is possible based on the physical characteristics of the domain to be modeled. On the one hand, there are continuum domains such as fluids or solids, where the element of discretisation should represent a more or less intuitively delimited macroscopic portion of continuum phase, while on the other hand, there are granular phases, like sand or molecules, where each element is assigned to a physically existing individual material parcel or molecule. Here we focus on the concept of the latter, the physical classification.
+\subsubsection{Continuum methods}
+This subsection contains some of the fundamental considerations of continuum particle methods with the definitions provided by [TODO]. \\
+
+\textbf{The $C^k$ spaces}: Let $\Omega$ be a bounded domain in $\R^d$ with piecewise continuous boundary $\partial\Omega$. We let $C^0(\Omega)$ denote the space of all continuous functions on $\overline{\Omega}$ with the norm
+\begin{equation}
+\norm{u}_{C^0(\Omega)}=max_{x\in\overline{\Omega}}|u(x)|,
+\end{equation}
+where $u(x)\in\R$. We denote
+\begin{equation}
+C^k(\Omega):=\{v\in C^0\vert\norm{v}_{C^k (\Omega)}<\infty\},
+\end{equation}
+where
+\begin{equation}
+\norm{v}_{C^k (\Omega)}:=\sum_{0<j<k}\sum_{m_{1j}+m_{2j}+...m_{dj}=j}\norm{\frac{\partial^j u}{\partial x^{m_{1j}}_{\partial x_1}\partial x^{m_{2j}}_{\partial x_2}...\partial x^{m_{dj}}_{\partial x_d}}}_{C^0(\Omega)}
+\end{equation}
+We also denote $C^0(\Omega)$ as the space of all continuous functions on $\Omega$ that also vanish at $\partial\Omega$
+
+\textbf{Partition of Unity}: Let $\Omega \subset \R^d(d=1,2,3)$ be and open bounded domain. Let $\Omega_1$, $\Omega_2$, ... $\Omega_{NP}$ be a family of open sets in $\R^d$, and \\
+1. The family of an open set ${\Omega}_{I\in\Lambda}$ generates a covering for domain $\Omega$,
+\begin{equation}
+\Omega\subset\bigcup\limits_{I\in \Lambda} \Omega_I
+\end{equation}
+2. There exists a family of functions, $\phi_I\in C_0^s(\R^d)$, $s\geq 0$, and $supp\{\phi_I\}\subset \overline{\Omega}_I$
+
+\noindent
+3.
+\begin{equation}
+0\leq\phi_I\leq 1 \quad \forall x \in \Omega_I
+\end{equation}
+4. The summation
+\begin{equation}
+\phi_1(\textbf{x})+\phi_2(\textbf{x})+\phi_3(\textbf{x})+\cdots+\phi_{NP}(\textbf{x})=1, \quad \forall \textbf{x}\in\Omega
+\end{equation}
+the family of generating function, or interpolation basis, ${\phi_I}_{I\in\Lambda}$ is called a partition of unity subordinate to the open cover $\{\Omega_I\}_{I\in \Lambda}$.
+
+A peculiar consequence of the partition of unity is that the open supports can form an overlapping covering of the computational domain. The essential principle of particle methods is founded on the concept of partition of unity (meshfree interpolation), which is constructed using $\phi$ mollifier functions with specific properties:
+\begin{flalign}
+\begin{split}
+&1.\quad \phi\in C^k(\Omega) \quad \textrm{where} \quad k>1, \\
+&2.\quad supp\{\phi\}=B_1, \\
+&3.\quad \phi(\textbf{x})>0 \quad \textrm{for} \norm{x}<1, \\
+&4.\quad \int_{B_1}\phi(\textbf{x})d\Omega=1,
+\end{split}
+\end{flalign}
+where
+\begin{align}
+B_{\rho}(\overline{\textbf{x}})=\{\textbf{x}|\norm{\textbf{x}-\overline{\textbf{x}}}\leq\rho,\textbf{x}\in \R^d\}
+\end{align}
+denotes a closed spherical ball shaped domain of influence with radius $\rho$ around $\overline{\textbf{x}}$. \\
+
+Some of the continuum methods are Smoothed Particle Hydrodynamics (SPH), which is a special collocation scheme for solving the strong form of PDE's, Element Free Galerkin method (EFG), Meshless Local Petrov Galerkin (MLPG), Reproducing Kernel Particle Method (RKPM), which are operating with weak form PDE's.
+\subsubsection{Discrete methods}
+In contrast with the representation of continuum domains, discrete methods do not apply meshfree interpolation techniques. Instead, the interactions (e.g. collisions) of macroscopic or molecular elements are directly calculated using physics-based models. Obviously, in the case of these methods, no spatial discretisation is required, due to the layout provided by the physical domain.
+
+These methods are the Discrete Element Method (DEM), Molecular Dynamics (MD), and we can mention here the simulations of self-gravitating multibody problems. Furthermore, the simulations of crowd, traffic, cloud of cooperating drones, or almost any problem, in which the state of individual objects depend on each other and governed by specific interaction-laws.
+
+\subsection{Methods implemented in Nauticle}
+Nauticle itself can be considered as an empty frame, until at least one numerical method is implemented and connected through its interface (see [TODO]). This section provides a brief introduction of two widespread particle methods, that are already implemented in Nauticle. The author encourages you to read the referred publications for more detailed and exhausting explanations in these topics.
+
+
+
+
+\subsubsection{N-body dynamics}
+The investiagtion of the dynamics of celestial objects with gravitational interaction has been motivated by the desire to calculate and predict the motion of the planets in the Solar system for arbitrary past or future times. The physical problem to solve in such a problem is often referred as the so-called N-body problem.
+\myparagraph{Equation of motion}
+In the multibody system the motion of a single object is governed by the
+\begin{flalign} \label{DEM_tangential_force}
+&\frac{dr_i}{dt}=\gamma\sum_j^N{\frac{m_im_j}{(r_i-r_j)^2}n},
+\end{flalign}
+where $\gamma$ is the gravitational constant, $m_i$ is the mass of object $i$, $N$ is the number of objects in the system, and again, $n=(r_i-r_j)/|r_i-r_j|$ is the normalised direction vector between the objects $i$ and $j$. Considering the planets as rotationally invariant spherical objects, their angular motion does not influence the translational motions.
+
+
+
+
+\subsubsection{Smoothed Particle Hydrodynamics}
+In the late 1970's the first papers on Smoothed Particle Hydrodynamics (SPH) published by R.A. Gingold and J.J. Monaghan [TODO] and independently by B. Lucy [TODO]. One of the motivations to construct SPH was the necessity of numerical methods dealing with boundaryless problems. Initially SPH was applied in astrophysical simulations, later, in the  early 1990's the first applications to fluid and solid mechanics problems appeared. During  the past two decades increasing attention is focused on SPH in both scientific and industrial areas, and the most significant progress of the development is done in the past fifteen years.\\
+SPH is a fully meshless collocation scheme representing continuum fields with spatially distributed set of particles (meshless interpolation). The basic idea of SPH is the generalised interpolation
+\begin{flalign} \label{convolution_delta}
+  A(r)=\int_{\Omega}{A(r')\delta(r-r')dV},
+\end{flalign}
+where $A(r)$ is an arbitrary function, $\delta$ is the Dirac-function, and $\Omega$ is an opened of closed spatial domain. The convolution \equref{convolution_delta} is directly not applicable in numerical models due to two reasons. On the one hand, the Dirac-function is  neither continuous, nor finite. On the other hand, the intergration can be performed on analytic functions only.
+The first step should be the application of a mathematically favourable smoothing kernel or  mollifier function $W(r-r',\sigma)$ instead of the Dirac-function:
+\begin{flalign} \label{convolution_kernel}
+  A(r)=\int_{\Omega}{A(r')W(r-r')dV}.
+\end{flalign}
+The kernel function $W(r-r',\sigma)$ has infinite or finite influence radius, with a $\sigma$ parameter controlling the width of the function. Here it is assumed that $W(r-r',\sigma)$ has finite radius denoted by $\Delta=n\sigma$, with $n\in\N$. The choice of the smoothing kernel function is not arbitrary. The most important properties of any smoothing kernel are (recalling the properties of the mollifier functions in partition of unity):
+\begin{flalign} \label{kernel_properties}
+\begin{split}
+&1.\quad W(r-r',\sigma)\in C^k(\Omega) \puretext{where} k>1, \\
+&2.\quad supp(W(r-r',\sigma))=B', \\
+&3.\quad W(r-r',\sigma)>0 \puretext{if} \norm{r}<\Delta, \\
+&4.\quad \int_{\Omega}{W(r-r',\sigma)dV}=1, \\
+&5.\quad \lim_{\sigma\to 0}W(r-r',\sigma)=\delta(r-r').
+\end{split}
+\end{flalign}
+Here $B'$ is a spherical volume around $r$ with a radius of $\Delta$. \\
+The discretisation of \equref{convolution_kernel} to a cloud of particles is written as
+\begin{flalign} \label{discrete_convolution}
+  \langle A(r_i)\rangle=\sum_{j}{A(r_j)W(r_i-r_j)\frac{m_j}{\rho_j}},
+\end{flalign}
+where $m_j$ and $\rho_j$ are the particle mass and density values respectively. \\
+The construction of first order SPH-differential operators can be introduced by applying \equref{convolution_kernel} to the derivative of $A(r)$. Using the divergence theorem of Gauss-Ostrogradsky, the second condition in \equref{kernel_properties}, and assuming that the sampling of the spherical domain $\Omega$ is sufficiently uniform, the differential operator can be replaced to the smoothing kernel function:
+\begin{flalign} \label{continuum_diffop}
+\begin{split}
+  \nabla A(r)=\int_{\Omega}{(\nabla A(r'))W(r-r')dV} = \\
+  \int_{\Omega}{\nabla \big[A(r')W(r-r')\big]dV}-\int_{\Omega}{A(r')\nabla W(r-r')dV}=\\
+  \int_{\partial\Omega}{\big[A(r')W(r-r')\big]dS}-\int_{\Omega}{A(r')\nabla W(r-r')dV}=\\
+  -\int_{\Omega}{A(r')\nabla W(r-r')dV}.
+\end{split}
+\end{flalign}
+The discretised form of \equref{continuum_diffop} is as follows: 
+\begin{flalign} \label{naiv_diffop}
+  \langle \nabla A(r_i)\rangle=\sum_{j}{A(r_j)\nabla W(r_i-r_j)\frac{m_j}{\rho_j}}.
+\end{flalign}
+Since the straightforward (or naiv) differential operator \equref{naiv_diffop} provides a less than $0^{th}$ order of consitency, several attempts made to increase accuracy. The different formulas of differential operators form a trade-off between consistency and conservation properties, and the choice of a suitable operator is usually based on physical considerations of a specific problem.
+Two of the most frequently applied first order SPH differential operators are 
+\begin{flalign} \label{corrected_diffop1}
+  &1.\quad\langle \nabla A(r_i)\rangle=\sum_{j}{\Bigg(\rho_j^k \frac{A(r_i)}{\rho_i^k}+\rho_i^k \frac{A(r_j)}{\rho_j^k}\Bigg)\nabla W(r_i-r_j)\frac{m_j}{\rho_j}}, \\
+  &2.\quad\langle \nabla A(r_i)\rangle=\sum_{j}{\Bigg(\rho_i^k \frac{A(r_i)}{\rho_j^k}-\rho_j^k \frac{A(r_j)}{\rho_i^k}\Bigg)\nabla W(r_i-r_j)\frac{m_j}{\rho_j}},
+  \label{corrected_diffop2}
+\end{flalign}
+where the power $k=0$ or $1$.\\
+The construction of a second order differential operator requires some further considerations. Since the application of \equref{naiv_diffop} to a second order  differentiation of $A(r)$
+\begin{flalign}
+  \langle \Delta A(r_i)\rangle=\sum_{j}{A(r_j)\Delta W(r_i-r_j)\frac{m_j}{\rho_j}}.
+\end{flalign}
+leads to a poor represention of the diffusion of quantity $A(r)$ [TODO], the invocation of the first order operators is more favourable. Considering \equref{corrected_diffop1} with $k=0$, the desired operator can be written as
+\begin{flalign} \label{N2_second_order_diffop}
+  \langle \Delta A(r_i)\rangle=\sum_{j}{\big(\langle\nabla A(r_i)\rangle+\langle\nabla A(r_j)\rangle\big)\nabla W(r_i-r_j)\frac{m_j}{\rho_j}}.
+\end{flalign}
+Although the \equref{N2_second_order_diffop} is mathematically correct, the implied nested interpolation has an undesirable $n^2$ computational complexity ($n$ is the number of neighbouring particles). To evade this circumstance, the most prevailing practice is to approximate the embedded operators with Taylor-series expansions of $A(r)$ up to the first order around particles $i$ and $j$:
+\begin{flalign} \label{Taylor_exp}
+\begin{split}
+A(r_j)=A(r_i)+\nabla A(r_i)(r_j-r_i), \\
+A(r_i)=A(r_j)+\nabla A(r_j)(r_i-r_j).
+\end{split}
+\end{flalign}
+After the expression of the derivatives of \equref{Taylor_exp} they can be inserted in \equref{N2_second_order_diffop}, to obtain the widespread second order SPH differential operator:
+\begin{flalign} \label{secondorder_diffop1}
+  \langle \Delta A(r_i)\rangle=\sum_{j}{2\big(A(r_i)-A(r_j)\big)\frac{r_j-r_i}{\vert r_j-r_i \vert^2}\nabla W(r_i-r_j)\frac{m_j}{\rho_j}},
+\end{flalign}
+which has a special variant
+\begin{flalign} \label{secondorder_diffop2}
+  \langle \nabla b\nabla A(r_i)\rangle=\sum_{j}{(b_i+b_j)\big(A(r_i)-A(r_j)\big)\frac{r_j-r_i}{\vert r_j-r_i \vert^2}\nabla W(r_i-r_j)\frac{m_j}{\rho_j}},
+\end{flalign}
+which is used to approximate the expression $\nabla b(r) \nabla A(r)$, with an arbitrary function $b$.
+Employing the differential operators (\ref{corrected_diffop1}-\ref{secondorder_diffop2}), the SPH-discretised form of partial differential equations can be constructed.
+
+
+
+
+
+\subsubsection{Discrete Element Method}
+In constrast with SPH, the Discrete Element Method (DEM) provides a formulation for modelling discontinuous materials through direct calculation of interaction forces between colliding elements. DEM is introduced by P.A. Cundall in 1971 [TODO] for particles with identical, regular shapes. Later the method was expanded for particles with irregular shapes by M.A. Taylor et al. in 2006 [TODO]. The method is suitable to exploit the general potentials of particle methods such as parallelisation and became one of the most famous particle-based tool for modelling motion of granular materials in engineering applications. In Nauticle the implemented DEM model assumes rotationally invariant spherical particles with varying radii. 
+\myparagraph{Equations of motion}
+The motion of particle $i$ in space can be described by Newton's second law
+\begin{flalign} \label{eq:DEM_EOM}
+\begin{split}
+&m_i\frac{d^2r_i}{dt^2}=F_i+m_i g_i, \\
+&\Theta_i\frac{d\omega_i}{dt}=T_i,
+\end{split}
+\end{flalign}
+where $r_i$ is the position, $m_i$ and $\Theta_i$ are the mass and moment of inertia, $F_i$ and $T_i$ are the resultant force and torque corresponding to particle $i$. Due to its high complexity, the deformation of particles is neglected, instead the collision forces are calculated using the overlap length
+\begin{flalign} \label{DEM_interactions}
+&\delta_{ij}=(R_i+R_j)-(r_j-r_j)n
+\end{flalign}
+between particle $i$ and $j$. Here $R$ is the particle radius and $n=(r_i-r_j)/|r_i-r_j|$ is the normalised direction vector within the particles in collision. The layout and notations of the collision of two adjecent particles is shown in Figure \ref{fig:collision}.
+\begin{figure}
+  \includegraphics[scale=0.8]{collision.pdf}
+  \centering
+  \caption{Particle collision layout with the length of overlap $\delta$.}
+  \label{fig:collision}
+\end{figure}\vspace*{3pt}
+The interaction force $F_i$ and torque $T_i$ in \equref{eq:DEM_EOM} can be determined using the collision model
+\begin{flalign} \label{DEM_interactions}
+&F_i=\sum_{j}{\left(F^n_{ij}+F^t_{ij}\right)} \\
+&T_i=\sum_{j}{T_{ij}}
+\end{flalign}
+with $F_{ij}^n$ and $F_{ij}^t$ being the normal and tangential forces and $T_{ij}$ is the torque acting from particle $j$ to $i$.
+\myparagraph{Normal contact force model}
+The abovementioned overlapping length anneals the collision response of rigid objects by the $\delta$-dependent repulsive normal contact force model
+\begin{flalign} \label{DEM_normal_force}
+&F_{ij}^n=(k^n\delta+k^d v^n)n, \\
+\end{flalign}
+where $k^n$ and $k^d$ are the spring and damping coefficients of the collision, while $v^n=nv_{ji}$ is the normal component of the relative velocity $v_{ij}$.
+\myparagraph{Tangential contact force and torque model}
+The tangential or shear forces between colliding particles are determined by the relative linear and angular velocities $v_{ij}$ and $\omega_{ij}$. The tangential contact force model is written as
+\begin{flalign} \label{DEM_tangential_force}
+&F_{ij}^t=k^t v^t,
+\end{flalign}
+where 
+\begin{flalign} \label{DEM_tangential_velocity}
+&v^t=v_{ij}-(v_{ij}n)n+R_i'n\times\omega_i+R_j'n\times\omega_j,
+\end{flalign}
+is the relative tangential velocity denoting the actual distance of particle $i$ and the contact point with $R_i'=(R_i-\delta/2)$. Finally, the tangential contact forces are used to calculate the resultant torque of particle $i$:
+\begin{flalign} \label{DEM_tangential_force}
+&T_i=\sum_j{R_i'n\times F_{ij}^t}.
+\end{flalign}
+Note that particle interaction forces and torques are calculated only when $\delta>0$, otherwise, the particles $i$ and $j$ are not in interaction with each other. The equations \equref{eq:DEM_EOM} form a system of $N$ algebraic equations that can be solved explicitely.\\
+
+
+
+
+
+
+
+
+\subsection{Temporal integration}
+Numerical schemes for integration are required to solve time-dependent differential equations. Two numerical schemes are implemented in Nauticle.
+\subsubsection{Explicit-Euler method}
+This is a one-step explicit method to advance quantities in time by the
+\begin{flalign}
+\phi^{n+1}=\phi^n+\Delta t f(\phi^n,t^n)
+\end{flalign}
+expression, where $\phi$ is an arbitrary quantity, and $f(\phi^n,t^n)$ is a function of $\phi$ and time $t$ in the $n$th time instant, and $\Delta t=t^{n+1}-t^n$ is the time step size.
+\subsubsection{Second-order Runge-Kutta method}
+The second order explicit Runge-Kutta, or midpoint scheme consists of two integration steps. The first one is the prediction step
+\begin{flalign}
+\phi^{n+1/2}=\phi^n+\Delta t f(\phi^n,t^n),
+\end{flalign}
+which is followed by the evaluation of $f(\phi^{n+1/2},t^{n+1/2})$. The second step is the correction step to obtain the final value $\phi^{n+1}$, by using the intermediate step:
+\begin{flalign}
+\phi^{n+1}=\phi^n+\Delta t f(\phi^{n+1},t^{n+1}).
+\end{flalign}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{The Nauticle environment}
+The basic idea of the Nauticle environment is that any particle method (regardless of the classification in the previous section) can be considered as the determination of interactions between spatially distributed point-like nodes (particles). This assumption leads to the general interpretation of particle methods as \textit{interactions}. 
+
+In this section the definitions corresponding to Nauticle are introduced, than the most important implementation methodologies and features of the solver are discussed.
+\subsubsection{Definitions}
+Tensors in Nauticle have a few restrictions that are discussed here for the sake of clarity and simplicity. The tensor $T$ is a zeroth ($T\in\R$), first ($T\in\R^d$), or second ($T\in\R\otimes\R$) order real valued tensor, in $d=1,2,3$ dimensions. Throughout this guide tensors are considered to obey these restrictions, otherwise it is indicated. The following notions are the related to the computational environment.
+
+\textbf{Constant}: The tensor $C$ is considered to be a constant if its initial value cannot be changed during its lifetime. Constants can be named or unnamed (e.g. $a=C+2$, where $C$ is named, $2$ is unnamed).
+
+\textbf{Variable}: The tensor $V$ is a variable, if its initial value can be changed during its lifetime.
+
+\textbf{Domain}: Consider the simply connected rectangular subset $\Gamma^d\subset\R^d$ ($d=1,2,3$), with edge size $\lambda^d$ and its boundary $\partial\Gamma^d$. The $\Gamma^d$ subset is a $d$ dimensional domain, if the
+\begin{flalign}
+\begin{split}
+&1.\quad \Gamma^d=[r_{min},r_{max}] \puretext{such that} r_{min}<r_{max} \puretext{and} \{r_{min},r_{max}\} \in \R^d\\
+&2.\quad r \in \Gamma^d \puretext{if} r^d_{min}<r<r^d_{max} \\
+&3.\quad \partial\Gamma^d=\bigcup_{d}{(r^d_{min}\cup r^d_{max})} \\
+&4.\quad \lambda^d=r^d_{max}-r^d_{min}
+\end{split}
+\end{flalign}
+conditions are satisfied.
+
+\textbf{Particle}: A point-like object with position $r\in\Gamma^d$.
+
+\textbf{Virtual particle}: A point-like object with position $r'\not\in\Gamma^d$. 
+
+\textbf{Particle system}: The $P_{N+N'}=\left\{r_i,r'_j|i=1,2,...,N,j=1,2,...,N'\right\}$ set of particles $r_i\in\Gamma^d$ and virtual particles $r'_j\not\in\Gamma^d$ is defined as a particle system of domain $\Gamma^d$. $P_{N+N'}$ is refered as opened if $j\not=0$, where the virtual particles $\left\{r'_j\right\}$ are either symmetric or periodic projections of particles $\left\{r_i\right\}$ with respect to boundary $\partial \Gamma^d$.
+
+\textbf{Field}: Consider a particle system $P_N$. The set $F_N=\left\{f_i\leftarrow P_N \vert i=1,2,...,N\right\}$ is a real valued zeroth, first or second order tensor field over $P_N$.
+
+\textbf{Expression}: An object constructed using mathematical operators $O(o_1,o_2,...,o_n)$ with $n$ operands, where $o_i$ is a constant, variable, field, or another operator.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Implementation}
+This section presents the structure of the Nauticle environment.
+\subsection{Tensor - the atomic quantity}
+\subsection{User-defined expressions}
+\subsection{Workspace}
+\subsection{Function space}
+\section{Using Nauticle}
+\section{Installation}
+\subsection{Requirements}
+Please note that currently, the installation process does not support Windows, it works only on Linux (distributions that support Application Package Tool (APT)) and Mac systems.  Hereinafter Linux is considered to support APT.
+Nauticle requires a few dependencies and requirements to be installed. These are the following:
+\begin{itemize}
+  \item cmake (at least vesrion 3.5) (\myhref{https://cmake.org/download/}{https://cmake.org/download/}),
+  \item Visualization Toolkit 7.0.0 (\myhref{http://www.vtk.org/files/release/7.0/VTK-7.0.0.zip}{http://www.vtk.org/files/release/7.0/VTK-7.0.0.zip}),
+  \item Common utilities (TODO),
+  \item ProLog (TODO),
+  \item HandyXML (TODO).
+\end{itemize} 
+Details of the required dependencies are not discussed here, please follow the links to find more information about the listed software. Further dependencies could be required by the Visualization Toolkit.
+
+During the installation process it is assumed that the user has internet connection and root privileges in the operating system. Throughout the following two subsections the manual and automatic installation procedures are discussed in detail.
+Note: to avoid any version conflicts it could be preferable to install and build Nauticle and its dependencies using HashDist, which is an environment management system (\myhref{https://github.com/hashdist/hashdist}{https://github.com/hashdist/ hashdist}). However it is not mandatory and the automated installation process does not apply HashDist.
+\subsection{Automated installation}
+Although it is possible to install and build the dependencies and Nauticle manually, it is recommended to use the installation shell script arrives with Nauticle. The script installs the whole package including the dependencies by typing the command
+\begin{lstlisting}[language=bash]
+  $ sh (*@\installer{}@*)
+\end{lstlisting}
+in terminal after changing direcotry to the desired folder. The content of the script with explanations is as follows:
+
+\begin{example}{\installer{}}{}
+\lstset{basicstyle=\tiny}
+\begin{lstlisting}[language=bash]
+  #!/bin/sh
+
+  # Set current directory to install directory.
+  INSTALL_DIR=$PWD
+  sudo chmod -R 777 ${INSTALL_DIR}
+
+  # Set OS variable (assume linux)
+  OS="Linux"
+  if [ "$(uname)" = "Darwin" ]; then
+  # if mac, install wget, and cmake
+      brew install wget
+      brew install cmake
+      OS="Mac"
+  elif [ $OS = "Linux" ]; then
+  # if linux, install opengl and cmake
+    sudo apt-get update
+    sudo apt-get --yes --force-yes install build-essential
+    sudo apt-get --yes --force-yes install freeglut3-dev
+    sudo apt-get --yes --force-yes install cmake
+  fi
+
+  # Install proper version of VTK library
+  wget http://www.vtk.org/files/release/7.0/VTK-7.0.0.zip
+  sudo unzip VTK-7.0.0.zip -d /usr/local/
+  cd /usr/local/VTK-7.0.0
+  sudo cmake .
+  sudo make
+
+  # Go to install directory
+  cd $INSTALL_DIR
+
+  # Download and unzip the required packages
+  # Common utils
+  wget https://bitbucket.org/Nauticleproject/commonutils/downloads/commonutils-1.0.170221.zip
+  sudo unzip commonutils-1.0.170221.zip
+  sudo chmod -R 777 commonutils
+  rm commonutils-1.0.170221.zip
+  # Prolog
+  wget https://bitbucket.org/Nauticleproject/prolog/downloads/prolog-1.0.170221.zip
+  sudo unzip prolog-1.0.170221.zip
+  sudo chmod -R 777 prolog
+  rm prolog-1.0.170221.zip
+  # HandyXML
+  wget https://bitbucket.org/Nauticleproject/handyxml/downloads/handyxml-1.0.170221.zip
+  sudo unzip handyxml-1.0.170221.zip
+  sudo chmod -R 777 handyxml
+  rm handyxml-1.0.170221.zip
+  # Nauticle
+  wget https://bitbucket.org/Nauticleproject/Nauticle/downloads/Nauticle-1.0.170221.zip
+  sudo unzip Nauticle-1.0.170221.zip
+  sudo chmod -R 777 Nauticle
+  rm Nauticle-1.0.170221.zip
+
+  # Install the dependencies and the Nauticle executable (pmsimple) itself
+  cd commonutils
+  sudo cmake .
+  sudo cmake .
+  sudo make install
+  cd ..
+   
+  cd prolog
+  sudo cmake .
+  sudo cmake .
+  sudo make install
+  cd ..
+   
+  cd handyxml
+  sudo cmake .
+  sudo cmake .
+  sudo make install
+  cd ..
+
+  # Set sirectory name for executable
+  BIN_DIR="${INSTALL_DIR}/Nauticle/bin/$OS"
+  cd Nauticle
+  sudo cmake .
+  sudo cmake .
+  sudo mkdir $BIN_DIR
+  sudo make
+  cd ..
+
+  # Add pmsimple to the environmental PATH variable
+  if [ "$OS" = "Mac" ]; then
+    sudo printf "\nexport PATH=\${PATH}:$BIN_DIR\n" >> ~/.bash_profile
+      alias brc='source ~/.bashrc'
+  elif [ "$OS" = "Linux" ]; then
+    sudo printf "\nexport PATH=\${PATH}:$BIN_DIR\n" >> ~/.bashrc
+    alias brc='source ~/.bashrc'
+  fi
+
+  # Generate optional script file to run pmsimple 
+  sudo rm -f start.sh
+  sudo touch start.sh
+  sudo chmod 777 start.sh
+  printf "#!/bin/sh\nexecutable=$BIN_DIR/pmsimple\n" >> start.sh
+  printf "sudo \$executable" >> start.sh
+\end{lstlisting}
+\end{example}
+
+It downloads and builds the necessary files in your system. After installation, the executable (\execname{}) will be placed in the bin directory and a \textbf{start.sh} file will be generated in the installation directory. The installer also adds the bin directory to your environment variables so you can run it from different directories. To activate this feature it could be necessary to manually reload the \textbf{.bash\_profile} or \textbf{.bashrc} file in your home directory using the \texttt{source} command.
+In certain cases, when environment variables are not available you can perform computations using the \textbf{start.sh} file in the simulation folder:
+\begin{lstlisting}[language=bash]
+  $ sh start.sh
+\end{lstlisting}
+Note that running Nauticle with the generated \textbf{start.sh} file does not allow to pass arguments to the solver in terminal. Any options should be placed in the \textbf{start.sh} file instead.
+\subsection{Uninstall Nauticle}
+Although removing Nauticle is as simple as the installation, you should be cautious when deleting any of the dependencies because other applications or libraries may rely on them.  To completely remove Nauticle you could use the uninstaller file
+\begin{lstlisting}[language=bash]
+  $ sh (*@\uninstaller{}@*)
+\end{lstlisting}
+which completely removes all the dependencies (except for Freeglut) and Nauticle itself.
+\section{Nauticle interface}
+
+\section{License}
+\noindent
+Copyright \textcopyright{} 2017 by Balazs Toth \\
+\noindent
+BME Budapest University of Technology and Ecnonimcs, Department of Hydraulic and Water Resources Engineering\\
+
+Nauticle is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version Nauticle is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details You should have received a copy of the GNU Lesser General Public License along with Nauticle.  If not, see \myhref{http://www.gnu.org/licenses/}{http://www.gnu.org/licenses/}\\
+ For more information please visit: \myhref{https://bitbucket.org/Nauticleproject/}{https://bitbucket.org/Nauticleproject/}
+
+
+\end{document}
