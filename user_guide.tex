@@ -201,19 +201,19 @@ This manuscript provides a detailed introduction of the Nauticle solver. It cont
 
 \section{Introduction}
 Due to their attractive properties, particle-based numerical methods enjoy increasing attention in many fields of engineering applications. In contrast with mesh-based methods  like finite element method, particle shemes have more flexible and adaptable spatial discretisation of the computational domain of any shape, especially in case of large deformations involving topology changes even with domain splitting [TODO].
-From the implementation point of view, most of the common features of particle-based numerical schemes are fundamentally different from mesh-based methods. Some of these differences are the lack of internodal structure (mesh), persistent changing of nodal connectivity, overlapping spatial covering of computational domain, and many further.
+From the implementation point of view, most of the common features of particle-based numerical schemes are fundamentally different from mesh-based methods. Some of these differences are the lack of internodal structure (mesh), persistent changing of nodal connectivity, overlapping spatial covering of computational domain.
 
-During the past decades several meshless numerical solver like [TODO], successfully proved the reason of existence of particle methods. These tools have solved problems of free surface flows, fluid-solid interactions, crack growth and propagation in solid domain, underwater explosions, in which areas mesh-based methods usually suffer from serious bottlenecks. Furthermore, the naturally large requirement of computational performance can be compensated by the efficient massive parallelisation of computations on multicore CPU and GPU devices. However, most of these simulation tools are designed to depend on a certain particle scheme, moreover, the governing equations of the physical model is usually burried in the code. The lack of generality from both the physical model and the computational scheme point of view, results in a robust but rigid numerical engine with limited range of applications. % ok 
+During the past decades several meshless numerical solver like [TODO], successfully proved the reason of existence of particle methods. These tools have solved problems of free surface flows, fluid-solid interactions, crack growth and propagation in solid domain, underwater explosions, in which areas mesh-based methods usually suffer from serious bottlenecks. Furthermore, the naturally large requirement of computational performance can be compensated by the efficient massive parallelisation of computations on multicore CPU and GPU devices. However, most of these simulation tools are designed to employ on a certain particle scheme, moreover, the governing equations of the physical model is usually burried in the code. The lack of generality from both the physical model and the computational scheme point of view, results in a robust but rigid numerical engine with limited range of applications. % ok 
 
-To leap towards a more general formulation of computations, one needs to distinguish two aspects of generality. The first one is that it is inevitable to emerge the governing equations from the depth of the solver core to the user's level. Obviously, it requires a fundamentally different realisation of the solver but ensures higher flexibility at the same time. The second aspect is that the governing equations should be interpreted and discretised according to a suitable numerical method, consequently several different methods has to be implemented in the same environment. Using a proper formulation for the interface between the solver core, the different numerical schemes and the user-defined equations it turns out that a truly flexible meshless simulation tool can be established. Note that the existence of multipurpose schemes in a single environment significantly facilitates  not only the flexible modelling of almost arbitrary problems but the efficient simulation of coupled problems as well.
+To leap towards a more general formulation of computations, one needs to distinguish two aspects of generality. The first one is that it is inevitable to emerge the governing equations from the depth of the solver core to the user's level. Obviously, it requires a fundamentally different realisation of the solver but ensures higher flexibility at the same time. The second aspect is that the governing equations should be interpreted and discretised according to a suitable numerical method, consequently several different methods need to be implemented in the same environment. Using a proper formulation for the interface between the solver core, the different numerical schemes and the user-defined equations it turns out that a truly flexible meshless simulation tool can be established. Note that the existence of multipurpose schemes in a single environment significantly facilitates  not only the flexible modelling of almost arbitrary problems but the efficient simulation of coupled problems as well.
 
-Nauticle is a general-purpose open-source C++ scientific numerical environment and solver for the application and implementation of particle methods. The goal of the library is to  establish a particle-based numerical solver that can solve user-defined system of algebraic and differential equtions over a set of spatially distributed particles in one, two, or three dimensions with the most suitable numerical particle-schemes. Solutions can be governed by priori implemented schemes like SPH, DEM, etc.
+Nauticle is a general-purpose open-source C++ scientific numerical environment and solver for the application and implementation of particle methods. The goal of the library is to  establish a particle-based numerical solver that can solve user-defined system of algebraic and differential equtions over a set of spatially distributed particles in one, two, or three dimensions with the most suitable numerical particle-schemes. Solutions can be governed by priori implemented schemes like SPH, DEM, etc. 
 
 This manuscript is organised as follows: TODO
 
 \section{Methodology}
 \subsection{Particle methods}
-Several classification of particle methods exist based on different mathematical or physical aspects. From mathematical point of view we can distinguish methods that are operating on the strong form of PDE's from those that are solving the weak form of Partial Differential Equations (PDE's). Another classification is possible based on the physical characteristics of the domain to be modeled. On the one hand, there are continuum domains such as fluids or solids, where the element of discretisation should represent a more or less intuitively delimited macroscopic portion of continuum phase, while on the other hand, there are granular phases, like sand or molecules, where each element is assigned to a physically existing individual material parcel or molecule. Here we focus on the concept of the latter, the physical classification.
+Several classification of particle methods exist based on different mathematical or physical aspects. From mathematical point of view we can distinguish methods that are operating on the strong form of Partial Differential Equations (PDE's) from those that are solving the weak form of PDE's. Another classification is possible based on the physical characteristics of the domain to be modeled. On the one hand, there are continuum domains such as fluids or solids, where the element of discretisation should represent a more or less intuitively delimited macroscopic portion of continuum phase, while on the other hand, there are granular phases, like sand or molecules, where each element is assigned to a physically existing individual material parcel or molecule. Here we focus on the concept of the latter, the physical classification.
 \subsubsection{Continuum methods}
 This subsection contains some of the fundamental considerations of continuum particle methods with the definitions provided by [TODO]. \\
 
@@ -271,7 +271,7 @@ In contrast with the representation of continuum domains, discrete methods do no
 These methods are the Discrete Element Method (DEM), Molecular Dynamics (MD), and we can mention here the simulations of self-gravitating multibody problems. Furthermore, the simulations of crowd, traffic, cloud of cooperating drones, or almost any problem, in which the state of individual objects depend on each other and governed by specific interaction-laws.
 
 \subsection{Methods implemented in Nauticle}
-Nauticle itself can be considered as an empty frame, until at least one numerical method is implemented and connected through its interface (see [TODO]). This section provides a brief introduction of two widespread particle methods, that are already implemented in Nauticle. The author encourages you to read the referred publications for more detailed and exhausting explanations in these topics.
+Nauticle itself can be considered as an empty frame, until at least one numerical method is implemented and connected through its interface (see [TODO]). This section provides a brief introduction of three widespread particle methods, that are already implemented in Nauticle. The author encourages you to read the referred publications for more detailed and exhausting explanations in these topics.
 
 
 
@@ -281,9 +281,9 @@ The investiagtion of the dynamics of celestial objects with gravitational intera
 \myparagraph{Equation of motion}
 In the multibody system the motion of a single object is governed by the
 \begin{flalign} \label{DEM_tangential_force}
-&\frac{dr_i}{dt}=\gamma\sum_j^N{\frac{m_im_j}{(r_i-r_j)^2}n},
+&\frac{d^2r_i}{dt^2}=\gamma\sum_j^N{\frac{m_im_j}{(r_i-r_j)^2}n},
 \end{flalign}
-where $\gamma$ is the gravitational constant, $m_i$ is the mass of object $i$, $N$ is the number of objects in the system, and again, $n=(r_i-r_j)/|r_i-r_j|$ is the normalised direction vector between the objects $i$ and $j$. Considering the planets as rotationally invariant spherical objects, their angular motion does not influence the translational motions.
+where $\gamma$ is the gravitational constant, $m_i$ is the mass of object $i$, $N$ is the number of objects in the system, and again, $n=(r_i-r_j)/|r_i-r_j|$ is the normalised direction vector between the objects $i$ and $j$. Considering the planets as rotationally invariant spherical objects, their angular motion does not influence the translational motions. This model has $N^2$ computational complexity.
 
 
 
@@ -294,8 +294,8 @@ SPH is a fully meshless collocation scheme representing continuum fields with sp
 \begin{flalign} \label{convolution_delta}
   A(r)=\int_{\Omega}{A(r')\delta(r-r')dV},
 \end{flalign}
-where $A(r)$ is an arbitrary function, $\delta$ is the Dirac-function, and $\Omega$ is an opened of closed spatial domain. The convolution \equref{convolution_delta} is directly not applicable in numerical models due to two reasons. On the one hand, the Dirac-function is  neither continuous, nor finite. On the other hand, the intergration can be performed on analytic functions only.
-The first step should be the application of a mathematically favourable smoothing kernel or  mollifier function $W(r-r',\sigma)$ instead of the Dirac-function:
+where $A(r)$ is an arbitrary function, $\delta$ is the Dirac-function, and $\Omega$ is an opened or closed spatial domain. The convolution \equref{convolution_delta} is directly not applicable in numerical models due to two reasons. On the one hand, the Dirac-function is  neither continuous, nor finite. On the other hand, the intergration can be performed on analytic functions only.
+The first step should be the application of a mathematically more favourable smoothing kernel or  mollifier function $W(r-r',\sigma)$ instead of the Dirac-function:
 \begin{flalign} \label{convolution_kernel}
   A(r)=\int_{\Omega}{A(r')W(r-r')dV}.
 \end{flalign}
@@ -314,13 +314,13 @@ The discretisation of \equref{convolution_kernel} to a cloud of particles is wri
 \begin{flalign} \label{discrete_convolution}
   \langle A(r_i)\rangle=\sum_{j}{A(r_j)W(r_i-r_j)\frac{m_j}{\rho_j}},
 \end{flalign}
-where $m_j$ and $\rho_j$ are the particle mass and density values respectively. \\
+where $m_j$ and $\rho_j$ are the particle mass and density values of particle $j$ respectively. \\
 The construction of first order SPH-differential operators can be introduced by applying \equref{convolution_kernel} to the derivative of $A(r)$. Using the divergence theorem of Gauss-Ostrogradsky, the second condition in \equref{kernel_properties}, and assuming that the sampling of the spherical domain $\Omega$ is sufficiently uniform, the differential operator can be replaced to the smoothing kernel function:
 \begin{flalign} \label{continuum_diffop}
 \begin{split}
   \nabla A(r)=\int_{\Omega}{(\nabla A(r'))W(r-r')dV} = \\
   \int_{\Omega}{\nabla \big[A(r')W(r-r')\big]dV}-\int_{\Omega}{A(r')\nabla W(r-r')dV}=\\
-  \int_{\partial\Omega}{\big[A(r')W(r-r')\big]dS}-\int_{\Omega}{A(r')\nabla W(r-r')dV}=\\
+  \int_{\partial\Omega}{A(r')W(r-r')dS}-\int_{\Omega}{A(r')\nabla W(r-r')dV}=\\
   -\int_{\Omega}{A(r')\nabla W(r-r')dV}.
 \end{split}
 \end{flalign}
@@ -328,14 +328,14 @@ The discretised form of \equref{continuum_diffop} is as follows:
 \begin{flalign} \label{naiv_diffop}
   \langle \nabla A(r_i)\rangle=\sum_{j}{A(r_j)\nabla W(r_i-r_j)\frac{m_j}{\rho_j}}.
 \end{flalign}
-Since the straightforward (or naiv) differential operator \equref{naiv_diffop} provides a less than $0^{th}$ order of consitency, several attempts made to increase accuracy. The different formulas of differential operators form a trade-off between consistency and conservation properties, and the choice of a suitable operator is usually based on physical considerations of a specific problem.
+Since the straightforward (or naiv) differential operator \equref{naiv_diffop} suffers from the lack of $0^{th}$ order consitency when the particle layout is not perfectly uniform, several attempts made to increase accuracy. The different formulas of differential operators form a trade-off between consistency and conservation properties, and the choice of a suitable operator is usually based on physical considerations of a specific problem.
 Two of the most frequently applied first order SPH differential operators are 
 \begin{flalign} \label{corrected_diffop1}
   &1.\quad\langle \nabla A(r_i)\rangle=\sum_{j}{\Bigg(\rho_j^k \frac{A(r_i)}{\rho_i^k}+\rho_i^k \frac{A(r_j)}{\rho_j^k}\Bigg)\nabla W(r_i-r_j)\frac{m_j}{\rho_j}}, \\
   &2.\quad\langle \nabla A(r_i)\rangle=\sum_{j}{\Bigg(\rho_i^k \frac{A(r_i)}{\rho_j^k}-\rho_j^k \frac{A(r_j)}{\rho_i^k}\Bigg)\nabla W(r_i-r_j)\frac{m_j}{\rho_j}},
   \label{corrected_diffop2}
 \end{flalign}
-where the power $k=0$ or $1$.\\
+where the power $k$ equals $0$ or $1$.\\
 The construction of a second order differential operator requires some further considerations. Since the application of \equref{naiv_diffop} to a second order  differentiation of $A(r)$
 \begin{flalign}
   \langle \Delta A(r_i)\rangle=\sum_{j}{A(r_j)\Delta W(r_i-r_j)\frac{m_j}{\rho_j}}.
@@ -344,7 +344,7 @@ leads to a poor represention of the diffusion of quantity $A(r)$ [TODO], the inv
 \begin{flalign} \label{N2_second_order_diffop}
   \langle \Delta A(r_i)\rangle=\sum_{j}{\big(\langle\nabla A(r_i)\rangle+\langle\nabla A(r_j)\rangle\big)\nabla W(r_i-r_j)\frac{m_j}{\rho_j}}.
 \end{flalign}
-Although the \equref{N2_second_order_diffop} is mathematically correct, the implied nested interpolation has an undesirable $n^2$ computational complexity ($n$ is the number of neighbouring particles). To evade this circumstance, the most prevailing practice is to approximate the embedded operators with Taylor-series expansions of $A(r)$ up to the first order around particles $i$ and $j$:
+Although the \equref{N2_second_order_diffop} is mathematically correct, the implied nested interpolation has an undesirably high computational complexity. To evade this circumstance, the most prevailing practice is to approximate the embedded operators with Taylor-series expansions of $A(r)$ up to the first order around particles $i$ and $j$:
 \begin{flalign} \label{Taylor_exp}
 \begin{split}
 A(r_j)=A(r_i)+\nabla A(r_i)(r_j-r_i), \\
