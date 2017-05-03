@@ -1,11 +1,12 @@
 \newcommand{\nauticleversion}{1.0.170221}
 \newcommand{\installer}{install-\nauticleversion{}.sh}
 \newcommand{\uninstaller}{uninstall-\nauticleversion{}.sh}
-\newcommand{\execname}{\textbf{nausolve}}
+\newcommand{\execname}{\textbf{nauticle}}
 
 \documentclass[a4paper,12pt,openany]{book}
 % \documentclass[a4paper,12pt,openany]{paper}
 \usepackage{courier}
+\usepackage{gensymb}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[english]{babel} % If you write in English
@@ -131,8 +132,26 @@ urlcolor=black}
 \newcommand{\norm}[1]{\left\lVert#1\right\rVert}
 \newcommand{\puretext}[1]{\quad\textrm{#1}\quad}
 \newcommand{\myparagraph}[1]{\paragraph{#1}\mbox{}\\}
+\newcommand{\mysection}[1]{\section{#1}\label{sec:#1}}
 \usepackage{mathtools}
 \DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+\definecolor{gray}{rgb}{0.4,0.4,0.4}
+\definecolor{darkblue}{rgb}{0.0,0.0,0.6}
+\definecolor{cyan}{rgb}{0.0,0.6,0.6}
+
+\lstdefinelanguage{XML}
+{
+  morestring=[b]",
+  morestring=[s]{>}{<},
+  morecomment=[s]{<?}{?>},
+  morecomment=[s]{!--}{--},
+  stringstyle=\color{cyan},
+  identifierstyle=\color{darkblue},
+  keywordstyle=\color{cyan},
+  commentstyle=\color{gray},
+  morekeywords={xmlns,version,type}% list your attributes here
+}
 
 \usepackage{tabularx,ragged2e,booktabs,caption}
 \newcolumntype{C}[1]{>{\Centering}m{#1}}
@@ -215,7 +234,7 @@ Nauticle is a general-purpose open-source C++ scientific numerical environment a
 The user-guide is organised as follows: TODO
 
 \section{Methodology}
-\subsection{Particle methods}
+\subsection{Particle methods} \label{sec:particle_method_classification}
 Several classification of particle methods exist based on different mathematical or physical aspects. From mathematical point of view we can distinguish methods that are operating on the strong form of Partial Differential Equations (PDE's) from those that are solving the weak form of PDE's. Another classification is possible based on the physical characteristics of the domain to be modeled. On the one hand, there are continuum domains such as fluids or solids, where the element of discretisation should represent a more or less intuitively delimited macroscopic portion of continuum phase, while on the other hand, there are granular phases, like sand or molecules, where each element is assigned to a physically existing individual material parcel or molecule. Here we focus on the concept of the latter, the physical classification.
 \subsubsection{Continuum methods}
 This subsection contains some of the fundamental considerations of continuum particle methods with the definitions provided by [TODO]. \\
@@ -377,7 +396,7 @@ The motion of particle $i$ in space can be described by Newton's second law
 \begin{split}
 &m_i\frac{d^2r_i}{dt^2}=F_i+m_i g_i, \\
 &\Theta_i\frac{d\omega_i}{dt}=T_i,
-\end{split} itself
+\end{split}
 \end{flalign}
 where $r_i$ is the position, $m_i$ and $\Theta_i$ are the mass and moment of inertia, $F_i$ and $T_i$ are the resultant force and torque corresponding to particle $i$. Due to its high complexity, the deformation of particles is neglected, instead the collision forces are calculated using the overlap length
 \begin{flalign} \label{DEM_interactions}
@@ -440,11 +459,11 @@ which is followed by the evaluation of $f(\phi^{n+1/2},t^{n+1/2})$. The second s
 
 \section{Implementation}
 \subsection{The Nauticle environment} \label{sec:environment}
-The basic idea of the Nauticle environment is that any particle method (regardless of the classification in the previous section) can be considered as the determination of interactions between spatially distributed point-like nodes (particles). This assumption leads to the general interpretation of particle methods as \textit{interactions}. 
+The basic idea of the Nauticle environment is that any particle method (regardless of the classification in Section \ref{sec:particle_method_classification}) can be considered as the determination of interactions between spatially distributed point-like nodes (particles). This assumption leads to the general interpretation of particle methods as \textit{interactions}. 
 
 In this section the definitions corresponding to Nauticle are introduced, than the most important implementation methodologies and features of the solver are discussed.
 \subsubsection{Definitions}
-\textbf{Tensor}: Tensors in Nauticle have a few restrictions that are discussed here for the sake of clarity and simplicity. The tensor $T$ is a zeroth ($T\in\R$), first ($T\in\R^d$), or second ($T\in\R\otimes\R$) order real valued tensor, in $d=1,2,3$ dimensions. Throughout this guide tensors are considered to obey these restrictions, otherwise it is indicated.
+\textbf{Tensor}: Tensors in Nauticle have a few restrictions that are discussed here for the sake of clarity and simplicity. The tensor $T$ is a zeroth ($T\in\R$), first ($T\in\R^d$), or second ($T\in\R\otimes\R$) order real valued tensor, in $d=1,2,3$ dimensions. Throughout this guide tensors are considered to obey these restrictions, otherwise it is indicated. Furthermore, all the quantities (scalar, vector and tensor) are represented by tensors.
 
 \textbf{Domain}: Consider the simply connected rectangular subset $\Gamma^d\subset\R^d$ ($d=1,2,3$), with edge size $\lambda^d$ and its boundary $\partial\Gamma^d$. The $\Gamma^d$ subset is a $d$ dimensional domain, if the
 \begin{flalign}
@@ -463,21 +482,9 @@ conditions are satisfied.
 
 \textbf{Field}: Consider a particle system $P_N$. The set $F_N=\left\{f_i\leftarrow P_N \vert i=1,2,...,N\right\}$ is a real valued zeroth, first or second order tensor field over $P_N$.
 
-\textbf{Workspace}: A collection of user-defined constants, variables, fields and particle system representing the quantities of the physical model.
-
-\textbf{User-defined equations (UDE)}: Expressions, built up using the workspace content. The evaluation of an equation means the assignment of the RHS solution to the LHS. Consequently the LHS should be a variable, field or particle system.
-
 \subsection{n-nearest neighbour search} \label{sec:neighbour_search}
 One of the specific properties of particle methods is the continually changing particle layout. Since no interparticle structure is considered, the connectivity may change (except for Lagrangian or unbounded mollifier) with the particle positions. The naive ($N^2$ complexity) determination of particle interactions is usually unsatisfactory due to its high performance requirement, therefore, a more efficient neighbour searching algorithm should be used instead. \\
-To determine interparticle connectivity, the following steps are performed in Nauticle:
-\begin{enumerate}
-  \item Calculation of hash key for each particle using the unfolding the domain shown by Figure \ref{fig:unfolding},
-  \item Sorting particles and the fields by the array of hash keys,
-  \item Generating Start and End arrays containing the index of the first and last particle of each cell. The Start and End arrays are introduced in Figure \ref{fig:nnsearch}.
-\end{enumerate}
-Later, during the calculation of particle interactions, the adjacent cells of each particle are checked to find the potential neighbours. Finally, the actual neighbours are calculated based on the set of potential neighbours. Due to computational optimisation, the steps above are not performed until the particle layout is changed.
-
-\begin{figure}[h]
+\begin{figure}[h!]
   \includegraphics[scale=0.6]{hash_key.pdf}
   \centering
   \caption{Unfolding the two dimensional domain to one dimension. The same procedure can be applied in three dimensions.}
@@ -489,6 +496,14 @@ Later, during the calculation of particle interactions, the adjacent cells of ea
   \caption{Indexing particle positions with Start and End arrays.}
   \label{fig:nnsearch}
 \end{figure}\vspace*{3pt}
+To determine interparticle connectivity, the following steps are performed in Nauticle:
+\begin{enumerate}
+  \item Calculation of hash key for each particle using the unfolding the domain shown by Figure \ref{fig:unfolding},
+  \item Sorting particles and the fields by the array of hash keys,
+  \item Generating Start and End arrays containing the index of the first and last particle of each cell. The Start and End arrays are introduced in Figure \ref{fig:nnsearch}.
+\end{enumerate}
+Later, during the calculation of particle interactions, the adjacent cells of each particle are checked to find the potential neighbours. Finally, the actual neighbours are calculated based on the set of potential neighbours. Due to computational optimisation, the steps above are not performed until the particle layout is changed.
+
 \subsection{Periodic and symmetric boundaries}
 The computational domain $\Omega$ defined in (TODO) forms the particles' frame of reference. Since no particle can ever exist outside the domain, the bounding surface $\partial\Omega$ applies symmetric or periodic rules to avoid the exclusion by handling particles that intend to cross the surface. Obviously, the opposite boundaries of $\Omega$ have to be both symmetric or periodic boundaries.
 Both conditions imply the repositioning of exiting particle $i$ applying the
@@ -541,11 +556,11 @@ Using the nodes of the expression tree the user-defined expressions can be const
 
 Although the nodes of the expression tree implements different quantities and operators of Nauticle, all nodes are considered as tensors. In the following, the branches and nodes of the expression tree is discussed.
 
-\subsubsection{The term branch}
+\subsubsection{The symbol branch}
 On the one hand, the single terms like constants and variables represent global values for the simulation such as time step size or gravity, which usually have the same value for each particle, consequently one (single) instance is sufficient to be stored. Therefore the single quantities have very small memory requirement. However, in case of multistep integrators, the desired number of former values of variables are automatically stored. Obviously it is unnecessary for the constant values, since their values cannot be changed during their lifetime. On the other hand, the fields are interpreted over a set of spatial nodes (particles) storing tensor values assigned for each of the particles. Former values for multistep integrators are automatically stored as well as in case of the variables. A special implementation of a field is the particle system itself, storing the particle positions as field variables. The particle system is special not only because of storing particle positions but it performs n-nearest neighour search and stores the computational domain too. The restriction of particles to the domain is also performed by the particle system.
 
 \subsubsection{The operator branch}
-The other main branch of the expression tree is the branch of operators acting on terms. Operators are classified into three groups:
+The other main branch of the expression tree is the branch of operators acting on symbols. Operators are classified into three groups:
 \begin{itemize}
   \item Arithmetic operators,
   \item Arithmetic functions,
@@ -596,11 +611,11 @@ Exponential & $exp$ & 1 & Trunc & $trunc$ & 1 \\
 Floor & $floor$ & 1 & Matrix determinant & $determinant$ & 1 \\
 Greater than & $gt$ & 2 & Matrix inverse & $inverse$ & 1 \\
 Natural logarithm & $log$ & 1 & Equal & $eq$ & 2 \\
-Less than & $lt$ & 2 & Boolean and & $and$ & 2 \\
-Vector lenght & $magnitude$ & 1 & Boolean or & $or$ & 2 \\
-Maximum & $max$ & 2 & Boolean negation & $not$ & 1 \\
-Minimum & $min$ & 2 & Boolean exclusive or & $xor$ & 2 \\
-Tensor element & $elem$ & 3 & Boolean condition & $if$ & 3 \\
+Less than & $lt$ & 2 & Logical and & $and$ & 2 \\
+Vector lenght & $magnitude$ & 1 & Logical or & $or$ & 2 \\
+Maximum & $max$ & 2 & Logical negation & $not$ & 1 \\
+Minimum & $min$ & 2 & Logical exclusive or & $xor$ & 2 \\
+Tensor element & $elem$ & 3 & Logical condition & $if$ & 3 \\
 \bottomrule[1.25pt]
 \end{tabular}
 \end{center}
@@ -623,41 +638,88 @@ Field average & $fmean$ & 1 & $[1 \times 1]$\\
 \end{tabular}
 \end{center}
 \end{table}
-More complicated operators in Nauticle belong to the particle methods presented in Section \ref{sec:implemented}.
-
+Further interaction operators in Nauticle belong to the particle methods presented in Section \ref{sec:implemented}.
 
 \section{Using Nauticle}
 \subsection{Simulation workflow} \label{sec:sim_workflow}
-% \subsection{Solver}
-% To define a simulation case you need to create a form to pass to the solver. The form contains all the required information about the physical model including a workspace and the list of equations. In this section the structure of the form is discussed through the introduction of the workspace and the user-defined equations.
-% \subsubsection{Workspace}
-% Workspace is a fundamental part of the solver. The workspace contains all the constants, variables, fields and the particle system. 
-% \subsubsection{User-defined equations} \label{UDE}
-% \subsection{Parameter space}
+To define a simulation case you need to create a form (XML-document) to pass to the solver. The form contains all the required information about the physical model called case. In this section the structure of the form is discussed through the introduction of the workspace and the user-defined equations.
+\subsubsection{Definitions}
+\textbf{Workspace}: A collection of user-defined symbols like constants, variables, fields and particle system representing the quantities of the physical model.
+
+\textbf{User-defined equation (UDE)}: Equation, built up using the nodes of the expression tree and the objects stored in the workspace. The evaluation of an equation means the assignment of the RHS solution to the LHS. Consequently the LHS should be a variable, field or particle system. Each UDE has a condition with a default value "true" that determines if the equation has to be solved or not. The condition may have particle-dependent value.
+
+\textbf{Parameter space}: An object to hold information that governs the simulation.
+
+\begin{figure}[h!]
+  \includegraphics[scale=0.55]{workflow.pdf}
+  \centering
+  \caption{Outline of the simulation flow.}
+  \label{fig:workflow}
+\end{figure}\vspace*{3pt}
+
+The schematic diagram of a simulation is presented in Figure \ref{fig:workflow}. After the parsing of the input files on the left, the case assembler builds the case, which is handled by the simulation scheduler. The latter is responsible for the calculation flow and parallelisation. The result files are saved by the VTK-writer governed by the case manager. 
+As soon as the simulation scheduler sends a step request, the solution of the UDE's is carried out by the case itself. The change of any symbol during the solution is automatically updated in the workspace. Optionally, any of the result files can be applied as initial conditions for a further simulation (see Section \ref{sec:XML}).
+
 \subsection{Input/Output file formats}
 During a simulation execution, Nauticle works with four types of input and output files. Some of these files are fundamental, the others are optional. The subsequent sections introduce these files more or less in the order of proirity.
 \subsubsection{VTK-document}
-\subsubsection{XML-document}
-The XML-document is the most important and fundamental input file of any simulation executed by Nauticle. The XML-documents are distinguished by the data they carry. A minimal document is presented in Figure \ref{fig:xml_intro}.
+VTK is a general purpose library for visualisation and storage of arbitrary geometry. To store simulation results, VTK formatted ASCII or binary files are used.
+\myparagraph{Simple Legacy Formats}
+The legacy VTK file formats consist of five basic parts.
+\begin{itemize}
+\item 1. The first part is the file version and identifier. This part contains the single line: \# vtk DataFile Version x.x. This line must be exactly as shown with the exception of the version number x.x, which will vary with different releases of VTK. (Note: Nauticle supports version 4.0) 
+\item 2. The second part is the header. The header consists of a character string terminated by end-of-line character. The header is 256 characters maximum. The header can be used to describe the data and include any other pertinent information. 
+\item 3. The next part is the file format. The file format describes the type of file, either ASCII or binary. On this line the single word ASCII or BINARY must appear. 
+\item 4. The fourth part is the dataset structure. The geometry part describes the geometry and topology of the dataset. This part begins with a line containing the keyword DATASET followed by a keyword describing the type of dataset. Then, depending upon the type of dataset, other keyword/ data combinations define the actual data.
+\item 5. The final part describes the dataset attributes. This part begins with the keywords POINT\_DATA or CELL\_DATA, followed by an integer number specifying the number of points or cells, respectively. (It doesn't matter whether POINT\_DATA or CELL\_DATA comes first.) Other keyword/ data combinations then define the actual dataset attribute values (i.e., scalars, vectors, tensors, normals, texture coordinates, or field data). 
+\end{itemize}
+In Nauticle the result files contain the whole case including the workspace and UDE's. The DATASET type is POLYDATA, while the symbols and UDE's are stored as string formatted data.
+\subsubsection{XML-document} \label{sec:XML}
+The XML-document is the most important and fundamental input file of any simulation executed by Nauticle. No simulation can be executed in absense of the configuration XML-file. Nevertheless, they can be distinguished by the data they contain. The most important advantage of the application of XML-files is that they support random access to the stored data, therefore the user is not required to follow strict rules during the construction of the simulation problem.
 \begin{figure}[h!]
-  \includegraphics[scale=1]{xml_intro.pdf}
+  \includegraphics[scale=1.05]{xml_intro.pdf}
   \centering
   \caption{Structure of the XML-document.}
   \label{fig:xml_intro}
 \end{figure}\vspace*{3pt}
-Using the document of Figure \ref{fig:xml_intro} the whole workspace and list of equations to be passed to the solver are defined and no external sources are used except for the nodal coordinates. Another way of problem initialisation is the application of a former simulation result stored in VTK file. Despite of that, XML-documents cannot be ommitted, but they are used to refer to the desired input file. This type of initialisation allows a significantly simpler XML-document as it is illistrated in Figure \ref{fig:xml_intro_simple}.
+A simple document is presented in Figure \ref{fig:xml_intro}, in which the whole workspace and list of equations to be passed to the solver are defined and no external sources are used except for the nodal coordinates (which is optional). Another way of problem initialisation is the application of a former simulation result stored in VTK file. Despite of that, XML-documents cannot be omitted, but are used to refer to the desired input file. This type of initialisation allows a significantly simpler XML-document as it is illistrated in Figure \ref{fig:xml_intro_simple}.
 \begin{figure}[h!]
   \includegraphics[scale=1]{xml_intro_simple.pdf}
   \centering
   \caption{Structure of the XML-document refer to the former simulation result.}
   \label{fig:xml_intro_simple}
 \end{figure}\vspace*{3pt}
-Note that in this configuration the workspace and list of equations are also stored in the VTK-document.
+\newpage
+Note that in this configuration the workspace and list of equations are also stored in the VTK file:\\
+\begin{lstlisting}
+# vtk DataFile Version 4.0
+vtk output
+ASCII
+DATASET POLYDATA
+FIELD FieldData 4
+domain 1 4 string
+domain_min:-10|-10
+domain_max:10|10
+cell_size:0.1
+boundary:0|1
+variables 1 2 string
+dt:0.002
+T:0
+constants 1 3 string
+C1:-1.1
+C2:3.14159
+C3:730
+equations 1 3 string
+eq1:T=(T+dt)#1
+eq2:F1=(C1+F2)#eq(gid,0)
+eq3:dt=(C3-C2)#gt(F1,C3)
+...
+\end{lstlisting}
+The character "\#" marks the solution condition for each UDE.
 \subsubsection{Text document}
-The particle layout can be optionally defined through text files containing the set of nodal positions instead of the uniform grid generation based on the XML data. Note that the text file should always contain three dimensional coordinates separated by spaces or tabs. The dimensions of the problem is then defined by the domain and only the relevant coordinates of the nodal positions are considered, other coordinates are dropped.
+The particle cloud can be optionally defined through text files containing the set of nodal positions instead of the uniform grid generation based on the XML data. Note that the text file should always contain three dimensional coordinates separated by spaces or tabs. The dimensions of the problem is then defined by the domain and only the relevant coordinates of the nodal positions are considered, other coordinates are dropped.
 \subsubsection{Logging}
 The simulation log file contains the simulation data as it appears in terminal during runtime. Each execution produces a single log file with the name "sim.log" by default. A previous log file with the same name in the working directory is purged at the beginning of the calculation without approval.
-% vtk, xml, log, xyz
 \subsection{Runtime commands}
 There are further optional commands that cannot be defined in the XML-document. These are the runtime commands summarised in Table \ref{tbl:runtime_commands}. To obtain information about the reserved names you need to use the "-wsres" command. Nauticle offers parallelisation on multicore CPU systems. By default, the number of threads to use during the execution is the number of available threads. Hovewer, you may want to limit the solver by defining the actual number threads to use. This can be done by the "-numthreads N" command, where N is the desired number of threads. 
 \begin{table} [h]
@@ -679,139 +741,309 @@ There are further optional commands that cannot be defined in the XML-document. 
 \end{center}
 \end{table}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 \section{Installation}
 \subsection{Requirements}
-Please note that currently, the installation process does not support Windows, it works only on Linux (distributions that support Application Package Tool (APT)) and Mac OSX systems.  Hereinafter Linux is considered to support APT.
+Currently the installation process does not support Windows, it works only on Linux (distributions that support Application Package Tool (APT)) and Mac OSX systems. Hereinafter Linux is considered to support APT.
 Nauticle requires a few dependencies and requirements to be installed. These are the following:
 \begin{itemize}
   \item cmake (at least version 3.5) (\myhref{https://cmake.org/download/}{https://cmake.org/download/}),
   \item Visualization Toolkit 7.0.0 (\myhref{http://www.vtk.org/files/release/7.0/VTK-7.0.0.zip}{http://www.vtk.org/files/release/7.0/VTK-7.0.0.zip}),
-  \item Common utilities (TODO),
-  \item ProLog (TODO),
-  \item HandyXML (TODO).
-\end{itemize} 
-Details of the required dependencies are not discussed here, please follow the links to find more information about the listed software. Further dependencies could be required by the Visualization Toolkit.
+  \item Common utilities (\href{https://bitbucket.org/BalazsToth/commonutils}{https://bitbucket.org/BalazsToth/commonutils}),
+  \item ProLog (\myhref{https://bitbucket.org/BalazsToth/prolog}{https://bitbucket.org/BalazsToth/prolog}),
+  \item HandyXML (\myhref{https://bitbucket.org/BalazsToth/handyxml}{https://bitbucket.org/BalazsToth/handyxml}).
+\end{itemize}
+The details of the required dependencies are not discussed here, please follow the links to find more information about the listed software. Further dependencies could be required by the Visualization Toolkit.
 
-During the installation process it is assumed that the user has internet connection and root privileges in the operating system. Throughout the following two subsections the manual and automatic installation procedures are discussed in detail.
-Note: to avoid any version conflicts it could be preferable to install and build Nauticle and its dependencies using HashDist, which is an environment management system (\myhref{https://github.com/hashdist/hashdist}{https://github.com/hashdist/ hashdist}). However it is not mandatory and the automated installation process does not apply HashDist.
+During the installation process it is assumed that the user has internet connection and root privileges in the operating system (super user). Throughout the following subsection the automatic installation procedure is discussed in detail.
+Note: to avoid any version conflicts it could be preferable to install and build Nauticle with its dependencies using HashDist, which is an environment management system (\myhref{https://github.com/hashdist/hashdist}{https://github.com/hashdist/ hashdist}). However it is not mandatory and the automated installation process does not apply HashDist.
 \subsection{Automated installation}
 Although it is possible to install and build the dependencies and Nauticle manually, it is recommended to use the installation shell script arrives with Nauticle. The script installs the whole package including the dependencies by typing the command
 \begin{lstlisting}[language=bash]
   $ sh (*@\installer{}@*)
 \end{lstlisting}
-in terminal after changing direcotry to the desired folder. The content of the script with explanations is as follows:
+in terminal after changing directory to the desired folder. The content of the script with explanations is as follows:
 
 \begin{example}{\installer{}}{}
 \lstset{basicstyle=\tiny}
 \begin{lstlisting}[language=bash]
-  #!/bin/sh
+#!/bin/sh
 
-  # Set current directory to install directory.
-  INSTALL_DIR=$PWD
-  sudo chmod -R 777 ${INSTALL_DIR}
+# Versions of nauticle and its dependencies
+NAUTICLE_version="1.0.170221"
+VTK_version="7.0.0"
+CU_VERSION="1.0.170221"
+PL_version="1.0.170221"
+HX_version="1.0.170502"
 
-  # Set OS variable (assume linux)
-  OS="Linux"
-  if [ "$(uname)" = "Darwin" ]; then
-  # if mac, install wget, and cmake
-      brew install wget
-      brew install cmake
-      OS="Mac"
-  elif [ $OS = "Linux" ]; then
-  # if linux, install opengl and cmake
+# Set current directory to install directory.
+INSTALL_DIR=$PWD
+sudo chmod -R 777 ${INSTALL_DIR}
+
+# Set OS variable (assume linux)
+OS="Linux"
+if [ "$(uname)" = "Darwin" ]; then
+# if mac, install wget, and cmake
+    brew install wget
+    brew install cmake
+    OS="Mac"
+elif [ $OS = "Linux" ]; then
+# if linux, install opengl and cmake
     sudo apt-get update
-    sudo apt-get --yes --force-yes install build-essential
-    sudo apt-get --yes --force-yes install freeglut3-dev
-    sudo apt-get --yes --force-yes install cmake
-  fi
+  sudo apt-get --yes --force-yes install build-essential
+  sudo apt-get --yes --force-yes install freeglut3-dev
+  sudo apt-get --yes --force-yes install cmake
+fi
 
-  # Install proper version of VTK library
-  wget http://www.vtk.org/files/release/7.0/VTK-7.0.0.zip
-  sudo unzip VTK-7.0.0.zip -d /usr/local/
-  cd /usr/local/VTK-7.0.0
-  sudo cmake .
-  sudo make
+# Install proper version of VTK library
+wget http://www.vtk.org/files/release/7.0/VTK-$VTK_version.zip
+sudo unzip VTK-$VTK_version.zip -d /usr/local/
+cd /usr/local/VTK-$VTK_version
+sudo cmake .
+sudo make
 
-  # Go to install directory
-  cd $INSTALL_DIR
+# Go to install directory
+cd $INSTALL_DIR
 
-  # Download and unzip the required packages
-  # Common utils
-  wget https://bitbucket.org/Nauticleproject/commonutils/downloads/commonutils-1.0.170221.zip
-  sudo unzip commonutils-1.0.170221.zip
-  sudo chmod -R 777 commonutils
-  rm commonutils-1.0.170221.zip
-  # Prolog
-  wget https://bitbucket.org/Nauticleproject/prolog/downloads/prolog-1.0.170221.zip
-  sudo unzip prolog-1.0.170221.zip
-  sudo chmod -R 777 prolog
-  rm prolog-1.0.170221.zip
-  # HandyXML
-  wget https://bitbucket.org/Nauticleproject/handyxml/downloads/handyxml-1.0.170221.zip
-  sudo unzip handyxml-1.0.170221.zip
-  sudo chmod -R 777 handyxml
-  rm handyxml-1.0.170221.zip
-  # Nauticle
-  wget https://bitbucket.org/Nauticleproject/Nauticle/downloads/Nauticle-1.0.170221.zip
-  sudo unzip Nauticle-1.0.170221.zip
-  sudo chmod -R 777 Nauticle
-  rm Nauticle-1.0.170221.zip
+# Download and unzip the required packages
+# Common utils
+wget https://bitbucket.org/nauticleproject/commonutils/downloads/commonutils-$CU_VERSION.zip
+sudo unzip commonutils-$CU_VERSION.zip
+sudo chmod -R 777 commonutils
+rm commonutils-$CU_VERSION.zip
+# Prolog
+wget https://bitbucket.org/nauticleproject/prolog/downloads/prolog-$PL_version.zip
+sudo unzip prolog-$PL_version.zip
+sudo chmod -R 777 prolog
+rm prolog-$PL_version.zip
+# HandyXML
+wget https://bitbucket.org/nauticleproject/handyxml/downloads/handyxml-$HX_version.zip
+sudo unzip handyxml-$HX_version.zip
+sudo chmod -R 777 handyxml
+rm handyxml-$HX_version.zip
+# nauticle
+wget https://bitbucket.org/nauticleproject/nauticle/downloads/nauticle-$NAUTICLE_version.zip
+sudo unzip nauticle-$NAUTICLE_version.zip
+sudo chmod -R 777 nauticle
+rm nauticle-$NAUTICLE_version.zip
 
-  # Install the dependencies and the Nauticle executable (pmsimple) itself
-  cd commonutils
-  sudo cmake .
-  sudo cmake .
-  sudo make install
-  cd ..
-   
-  cd prolog
-  sudo cmake .
-  sudo cmake .
-  sudo make install
-  cd ..
-   
-  cd handyxml
-  sudo cmake .
-  sudo cmake .
-  sudo make install
-  cd ..
+# Install the dependencies and the nauticle executable (nauticle) itself
+cd commonutils
+sudo cmake .
+sudo cmake .
+sudo make install
+cd ..
+ 
+cd prolog
+sudo cmake .
+sudo cmake .
+sudo make install
+cd ..
+ 
+cd handyxml
+sudo cmake .
+sudo cmake .
+sudo make install
+cd ..
 
-  # Set sirectory name for executable
-  BIN_DIR="${INSTALL_DIR}/Nauticle/bin/$OS"
-  cd Nauticle
-  sudo cmake .
-  sudo cmake .
-  sudo mkdir $BIN_DIR
-  sudo make
-  cd ..
+# Set directory name for executable
+BIN_DIR="${INSTALL_DIR}/nauticle/bin/$OS"
+cd nauticle
+sudo cmake .
+sudo cmake .
+sudo mkdir $BIN_DIR
+sudo make
+cd ..
 
-  # Add pmsimple to the environmental PATH variable
-  if [ "$OS" = "Mac" ]; then
-    sudo printf "\nexport PATH=\${PATH}:$BIN_DIR\n" >> ~/.bash_profile
-      alias brc='source ~/.bashrc'
-  elif [ "$OS" = "Linux" ]; then
-    sudo printf "\nexport PATH=\${PATH}:$BIN_DIR\n" >> ~/.bashrc
-    alias brc='source ~/.bashrc'
-  fi
+# Add BIN_DIR to the environmental PATH variable
+if [ "$OS" = "Mac" ]; then
+  sudo printf "\nexport PATH=\${PATH}:$BIN_DIR\n" >> ~/.bash_profile
+    alias brc='source ~/.bash_profile'
+elif [ "$OS" = "Linux" ]; then
+  sudo printf "\nexport PATH=\${PATH}:$BIN_DIR\n" >> ~/.bashrc
+  alias brc='source ~/.bashrc'
+fi
 
-  # Generate optional script file to run pmsimple 
-  sudo rm -f start.sh
-  sudo touch start.sh
-  sudo chmod 777 start.sh
-  printf "#!/bin/sh\nexecutable=$BIN_DIR/pmsimple\n" >> start.sh
-  printf "sudo \$executable" >> start.sh
+# Generate script file to run nauticle
+# (this file is optional and probably useful only when using Nauticle through ssh)
+sudo rm -f start.sh
+sudo touch start.sh
+sudo chmod 777 start.sh
+printf "#!/bin/sh\nshift\nexecutable=$BIN_DIR/nauticle\n" >> start.sh
+printf "sudo \$executable \"\$@\"" >> start.sh
+
 \end{lstlisting}
 \end{example}
 
-It downloads and builds the necessary files in your system. After installation, the executable (\execname{}) will be placed in the bin directory and a \textbf{start.sh} file will be generated in the installation directory. The installer also adds the bin directory to your environment variables so you can run it from different directories. To activate this feature it could be necessary to manually reload the \textbf{.bash\_profile} or \textbf{.bashrc} file in your home directory using the \texttt{source} command.
+It downloads and builds the necessary files in your system. After installation, the executable (\execname{}) will be placed in the bin directory and the \textbf{start.sh} file will be generated in the installation directory. The installer also adds the bin directory to your environment variables, therefore you can run it from different directories by simply typing \textbf{nauticle} in terminal. To activate this feature it may be necessary to manually reload the \textbf{.bash\_profile} or \textbf{.bashrc} file in your home directory using the \texttt{source} command.
 In certain cases, when environment variables are not available you can perform computations using the \textbf{start.sh} file in the simulation folder:
 \begin{lstlisting}[language=bash]
   $ sh start.sh
 \end{lstlisting}
-Note that running Nauticle with the generated \textbf{start.sh} file does not allow to pass arguments to the solver in terminal. Any options should be placed in the \textbf{start.sh} file instead.
-
+Note that the optional runtime commands are forwarded by \textbf{start.sh}, which supports the execution of
+\begin{lstlisting}[language=bash]
+  $ sh start.sh <arguments_list>
+\end{lstlisting}
+where the arguments\_list consists of the option listed in Table \ref{tbl:runtime_commands}.
 
 \section{Nauticle interface} \label{sec:interface}
+
+\section{Examples} \label{sec:examples}
+\subsection{Couette-flow}
+\subsubsection{Problem definition}
+One of the simplest and most frequently investigated fundamental test case in fluid mechanics is the laminar Couette-flow. The upper one of the two infinite sized parallel walls shown in Figure \ref{fig:couette} is moving in $y$ direction with $v=1$m/s.
+\begin{figure}[h!]
+  \includegraphics[scale=0.7]{couette.pdf}
+  \centering
+  \caption{Temperature-dependent laminar Couette-flow between parallel walls.}
+  \label{fig:couette}
+\end{figure}\vspace*{3pt}
+The walls have different temperatures $T_1=0^\circ$C and $T_2=100^\circ$C affecting the fluid temperature and consequently the viscosity by the
+\begin{equation}
+\nu(T)=\nu_0 \exp(-bT)
+\end{equation}
+formula. The constants here are chosen to be $\nu_0=0.1$ and $b=0.03$ are. Since the flow is laminar, the temperature distribution between the parallel walls can be determined by the heat equation
+\begin{equation} \label{eq:couette_laplace}
+\frac{\partial T}{\partial t}=\lambda\Delta T,
+\end{equation}
+where $\lambda=0.01$ is the heat conduction coefficient. The fluid velocity in the channel is governed by 
+\begin{equation} \label{eq:couette_eom}
+\frac{\partial v}{\partial t}=\nabla(\nu(T)\nabla v),
+\end{equation}
+where $v$ is the fluid velocity field. Since the problem is staitonary and one-dimensional, the equations \equref{eq:couette_laplace} and \equref{eq:couette_eom} are simplified as
+\begin{flalign} \label{eq:couette_simplified}
+\begin{split}
+&\frac{d^2T}{dx^2}=0, \\
+&\frac{d}{dx}\bigg(\nu(T)\frac{dv}{dx}\bigg)=0,
+\end{split}
+\end{flalign}
+Applying Dirichlet-boundary conditions for both the temperature and velocity fields:
+\begin{flalign} \label{eq:couette_bc}
+\begin{split}
+&T(-L/2)=0,\\
+&T(L/2)=100, \\
+&v(-L/2)=0, \\
+&v(L/2)=1, \\
+\end{split}
+\end{flalign}
+where $L=1$m is the width of the channel. The solution of \equref{eq:couette_simplified} can be constructed analytically.
+\subsubsection{Numerical model and results}
+To solve the Couette-flow problem the simplest model is built in Nauticle using the SPH collocation scheme. Although SPH is Lagrangian (particles should follow material trajectories), in the case of laminar parallel flow, the movement of particles can be omitted due to the identity of the Lagrangian and Eulerian fields. The time dependent discretised system of equations are
+\begin{flalign} \label{eq:couette_sph_discretised}
+\begin{split}
+&\frac{dT_i}{dt}=\lambda\sum_j{2(T_j-T_i)\frac{1}{r_{ji}}\frac{m_j}{\rho_j}\nabla W_{ij}}, \\
+&\frac{dv_i}{dt}=\sum_j{(\nu_j+\nu_i)(v_j-v_i)\frac{1}{r_{ji}}\frac{m_j}{\rho_j}\nabla W_{ij}}. \\
+\end{split}
+\end{flalign}
+After the discretisation the XML-document can be constructed:
+\begin{example}{Couette-flow configuration file}{}
+\lstset{basicstyle=\tiny}
+\begin{lstlisting}[language=XML]
+<?xml version="1.0" encoding="UTF-8"?>
+<simulation>
+    <case>
+        <workspace>
+            <constants>
+                <L value="1"/>
+                <csize value="L/20"/>
+                <dx value="csize/2"/>
+                <rho0 value="1000"/>
+                <mass value="dx*rho0"/>
+                <lambda value="0.01"/>
+                <nu0 value="0.1"/>
+                <b value="0.03"/>
+                <T1 value="0"/>
+                <T2 value="100"/>
+                <v1 value="0"/>
+                <v2 value="1"/>
+            </constants>
+            <variables>
+                <dt value="0.0025"/>
+                <Time value="0"/>
+            </variables>
+            <particle_system>
+                <domain>
+                    <cell_size value="csize"/>
+                    <minimum value="-L/csize/2-1"/>
+                    <maximum value="L/csize/2+1"/>
+                    <boundary value="periodic"/>
+                </domain>
+                <grid> <!-- bottom boundary particles -->
+                    <gid value="1"/>
+                    <gpos value="-L/2-csize+dx/2"/>
+                    <gsize value="csize"/>
+                    <goffset value="0"/>
+                    <gip_dist value="dx"/>
+                </grid>
+                <grid> <!-- fluid particles -->
+                    <gid value="0"/>
+                    <gpos value="-L/2+dx/2"/>
+                    <gsize value="L-dx"/>
+                    <goffset value="0"/>
+                    <gip_dist value="dx"/>
+                </grid>
+                <grid> <!-- top boundary particles -->
+                    <gid value="2"/>
+                    <gpos value="L/2-dx/2"/>
+                    <gsize value="csize"/>
+                    <goffset value="0"/>
+                    <gip_dist value="dx"/>
+                </grid>
+            </particle_system>
+            <fields>
+                <a value="0"/>
+                <v value="if(eq(0,gid),0,if(eq(gid,1),v1,v2))"/> <!-- initial condition -->
+                <T value="if(eq(0,gid),0,if(eq(gid,1),T1,T2))"/> <!-- initial condition -->
+                <T_dot value="0"/>
+                <nu value="0.1"/>
+            </fields>
+        </workspace>
+        <equations>
+            <time value="Time=Time+dt"/>
+            <heat value="T_dot=lambda*sph_L00(T,mass,rho0,Wp32210,csize)" condition="eq(gid,0)"/>
+            <temp value="T=euler(T,T_dot,dt)" condition="eq(gid,0)"/>
+            <viscosity value="nu=nu0*exp(-b*T)"/>
+            <moment value="a=sph_L10(nu,v,mass,rho0,Wp32210,csize)" condition="eq(gid,0)"/>
+            <vel value="v=euler(v,a,dt)" condition="eq(gid,0)"/>
+        </equations>
+    </case>
+    <parameter_space>
+        <simulated_time value="100"/>
+        <print_interval value="1"/>
+        <confirm_on_exit value="false"/>
+        <output_format value="BINARY"/>
+    </parameter_space>
+</simulation>
+\end{lstlisting}
+\end{example}
+Since the initial condition of both the temperature and velocity is uniform, the solution of the discretised equations needs to be repeated until the result is sufficiently formed. In this case the simulated time is $100$s. The final result is compared with the analytical solution in Figure \ref{fig:couette_results}.
+\begin{figure}[h!]
+  \includegraphics[scale=0.4]{couette_result.pdf}
+  \centering
+  \caption{Couette-flow results comparison.}
+  \label{fig:couette_results}
+\end{figure}\vspace*{3pt}
+
+The results show very good agreement with the analytical solution in case of both the linear temperature and the exponential velocity distributions.
+\subsection{Poisson's equation}
+\subsection{Cahn-Hilliard equation}
+\subsection{Solar system}
+\subsection{Shallow water equations}
+\subsection{Granular material}
+\subsection{Dam-break}
 \section{The Nauticle open-source code}
 This section comments the role of each source and header file of Nauticle. For better clarity the explanation is divided into different groups marked by the subsequent sections.
 \subsection{Nodes of the expression tree}
@@ -819,8 +1051,8 @@ This section comments the role of each source and header file of Nauticle. For b
 \textbf{pmExpression.h / pmExpression.cpp} \\
 Declares / defines the expression node of the expression tree. This is an abstract class. \\
 
-\textbf{pmTerm.h / pmTerm.cpp} \\
-Declares / defines the term node of the expression tree. This is an abstract class. \\
+\textbf{pmSymbol.h / pmSymbol.cpp} \\
+Declares / defines the symbol node of the expression tree. This is an abstract class. \\
 
 \textbf{pmSingle.h / pmSingle.cpp} \\
 Declares / defines the single node of the expression tree. This is an abstract class. \\
@@ -892,7 +1124,7 @@ Declares / defines the functions that analyse tensors based on expressions. \\
 \textbf{pmParameter\_space.h / pmParameter\_space.cpp} \\
 Declares / defines the functions for parameter management. \\
 
-\textbf{pmCase.h / pmCase.cpp} \\
+\textbf{pmCase\_manager.h / pmCase\_manager.cpp} \\
 Declares / defines the functions that read the configuration file, build and run the simulation through the solver. \\
 
 \textbf{pmDomain.h / pmDomain.cpp} \\
@@ -916,7 +1148,7 @@ Declares / defines the class for user defined equations. It contains two express
 \textbf{pmWorkspace.h / pmWorkspace.cpp} \\
 Declares / defines the class that manages user defined variables, constants, fields, and particle system. \\
 
-\textbf{pmSolver.h / pmSolver.cpp} \\
+\textbf{pmCase.h / pmCase.cpp} \\
 Declares / defines the class that manages workspace and user defined equations. It solves the equations too. \\
 
 \textbf{pmGrid.h / pmGrid.cpp} \\
@@ -976,7 +1208,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 
 \subsection{Nauticle}
 \noindent
-Copyright \textcopyright{} 2017 by Balazs Toth \\
+Copyright \textcopyright{} 2016-2017 by Balazs Toth \\
 \noindent
 BME Budapest University of Technology and Ecnonimcs, Department of Hydraulic and Water Resources Engineering\\
 
