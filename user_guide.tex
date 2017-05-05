@@ -25,6 +25,7 @@
 set decimal separator={,\!},
 1000 sep={\,},
 }
+\usepackage{booktabs}
 \usepackage{ifthen}
 \usepackage{ifpdf}
 \ifpdf
@@ -302,7 +303,7 @@ Nauticle itself can be considered as an empty frame, until at least one numerica
 The investigation of the dynamics of celestial objects with gravitational interaction has been motivated by the desire to calculate and predict the motion of the planets in the Solar system for arbitrary past or future times. The physical problem to solve in such a problem is often referred as the so-called N-body problem.
 \myparagraph{Equation of motion}
 In the multibody system the motion of a single object is governed by the
-\begin{flalign} \label{DEM_tangential_force}
+\begin{flalign} \label{nbody_eom}
 &\frac{d^2r_i}{dt^2}=\gamma\sum_j^N{\frac{m_im_j}{(r_i-r_j)^2}n},
 \end{flalign}
 where $\gamma$ is the gravitational constant, $m_i$ is the mass of object $i$, $N$ is the number of objects in the system, and again, $n=(r_i-r_j)/|r_i-r_j|$ is the normalised direction vector between the objects $i$ and $j$. Considering the planets as rotationally invariant spherical objects, their angular motion does not influence the translational motions. This model has $N^2$ computational complexity.
@@ -915,7 +916,7 @@ The walls have different temperatures $T_1=0^\circ$C and $T_2=100^\circ$C affect
 \begin{equation}
 \nu(T)=\nu_0 \exp(-bT)
 \end{equation}
-formula. The constants here are chosen to be $\nu_0=0.1$ and $b=0.03$ are. Since the flow is laminar, the temperature distribution between the parallel walls can be determined by the heat equation
+formula. The constants here are chosen to be $\nu_0=0.1$ and $b=0.03$. Since the flow is laminar, the temperature distribution between the parallel walls can be determined by the heat equation
 \begin{equation} \label{eq:couette_laplace}
 \frac{\partial T}{\partial t}=\lambda\Delta T,
 \end{equation}
@@ -923,7 +924,7 @@ where $\lambda=0.01$ is the heat conduction coefficient. The fluid velocity in t
 \begin{equation} \label{eq:couette_eom}
 \frac{\partial v}{\partial t}=\nabla(\nu(T)\nabla v),
 \end{equation}
-where $v$ is the fluid velocity field. Since the problem is staitonary and one-dimensional, the equations \equref{eq:couette_laplace} and \equref{eq:couette_eom} are simplified as
+where $v$ is the fluid velocity field. The problem is stationary and one-dimensional, therefore the equations \equref{eq:couette_laplace} and \equref{eq:couette_eom} are simplified as
 \begin{flalign} \label{eq:couette_simplified}
 \begin{split}
 &\frac{d^2T}{dx^2}=0, \\
@@ -939,7 +940,14 @@ Applying Dirichlet-boundary conditions for both the temperature and velocity fie
 &v(L/2)=1, \\
 \end{split}
 \end{flalign}
-where $L=1$m is the width of the channel. The solution of \equref{eq:couette_simplified} can be constructed analytically.
+where $L=1$m is the width of the channel. The solution of \equref{eq:couette_simplified} can be constructed analytically, being
+\begin{flalign} \label{eq:couette_analytical}
+\begin{split}
+&T(x)=\frac{T_2-T_1}{L}x+\frac{T_1+T_2}{2}=100x+50,\\
+&v(x)=\frac{v_2-v_1}{e^{bT_1}-e^{bT_2}}(e^{bT(x)}-e^{bT_1})+v_1=\frac{e^{b(100x+50)}-1}{e^{100b}}.\\
+\end{split}
+\end{flalign}
+
 \subsubsection{Numerical model and results}
 To solve the Couette-flow problem the simplest model is built in Nauticle using the SPH collocation scheme. Although SPH is Lagrangian (particles should follow material trajectories), in the case of laminar parallel flow, the movement of particles can be omitted due to the identity of the Lagrangian and Eulerian fields. The time dependent discretised system of equations are
 \begin{flalign} \label{eq:couette_sph_discretised}
@@ -1038,12 +1046,209 @@ Since the initial condition of both the temperature and velocity is uniform, the
 \end{figure}\vspace*{3pt}
 
 The results show very good agreement with the analytical solution in case of both the linear temperature and the exponential velocity distributions.
-\subsection{Poisson's equation}
-\subsection{Cahn-Hilliard equation}
-\subsection{Solar system}
+\subsection{Cahn-Hilliard equation on a sphere}
+\subsubsection{Problem definition}
+The process of separation of two phases is usually modelled by the fourth order nonlinear Cahn-Hilliard equation
+\begin{flalign} \label{eq:cahnhilliard}
+\begin{split}
+&\frac{\partial c}{\partial t}=D\Delta \mu,\\
+&\mu=c^3-c-\gamma\Delta c, \\
+\end{split}
+\end{flalign}
+where $c\in[-1,1]$ is the phase concentration, $\mu$ is the chemical potential, $\sqrt{\gamma}$ is the thickness of the transition region between the two phases and $D$ is a diffusion coefficient. In this particluar case the solution of equation \equref{eq:cahnhilliard} is investigated over a surface of a sphere.
+
+\subsubsection{Numerical model and results}
+The numerical scheme to discretise the system \equref{eq:cahnhilliard} is SPH. Since the geometry is generated in Cartesian coordinates, the domain itself is three dimensional. However, the mollifier in the spatial interpolant should be two dimensional due to the interpretation of the problem on the spherical surface. The discretised form of the equations \equref{eq:cahnhilliard} are
+\begin{flalign} \label{eq:cahnhilliard_sph_discretised}
+\begin{split}
+&\frac{\partial c_i}{\partial t}=D\sum_j{2(\mu_j-\mu_i)\frac{m_j}{\rho_j}\nabla W_{ij}},\\
+&\mu_i=c^3-c-\gamma\sum_j{2(c_j-c_i)\frac{m_j}{\rho_j}\nabla W_{ij}}, \\
+\end{split}
+\end{flalign}
+where again, $W_{ij}$ is normalised in two dimensions. The configuration file to solve \equref{eq:cahnhilliard_sph_discretised} is
+\begin{example}{Cahn-Hilliard configuration file}{}
+\lstset{basicstyle=\tiny}
+\begin{lstlisting}[language=XML]
+<?xml version="1.0" encoding="UTF-8"?>
+<simulation>
+  <case>
+    <workspace>
+      <constants>
+        <L value="2"/>
+        <dx value="0.0675"/>
+        <csize value="dx*2.1"/>
+        <rho0 value="1000"/>
+        <mass value="dx^2*rho0"/>
+        <D value="0.003"/>
+        <CFL value="0.1"/>
+        <gamma value="(csize/3)^2"/>
+        <dt_g value="gamma/csize^2"/>
+      </constants>
+      <variables>
+        <dt value="0.003"/>
+        <Time value="0"/>
+        <print_interval value="dt"/>
+      </variables>
+      <fields>
+        <c value="rand(-1,1)"/> <!-- Initial condition -->
+        <c_dot value="0"/>
+        <mu value="0"/>
+      </fields>
+      <particle_system>
+        <domain>
+          <cell_size value="csize"/>
+          <minimum value="-L/csize|-L/csize|-L/csize"/>
+          <maximum value="L/csize|L/csize|L/csize"/>
+          <boundary value="0|0|0"/>
+        </domain>
+        <grid>
+          <gid value="0"/>  <!-- Read particle positions from file -->
+          <file value="points.xyz"/>
+        </grid>
+      </particle_system>
+    </workspace>
+      <equations>
+        <time value="Time=Time+dt"/>
+        <chemical_potential value="mu=c^3-c-gamma*sph_L00(c,mass,rho0,Wp32220,csize)"/>
+        <Cahn_Hilliard value="c_dot=D*sph_L00(mu,mass,rho0,Wp32220,csize)"/>
+        <integration value="c=euler(c,c_dot,dt)"/>
+        <new_dt value="dt=CFL*min(1/fmax(c_dot),dt_g)"/> <!-- Adaptive time stepping -->
+        <print value="print_interval=exp(Time/45)"/> <!-- Modify printing interval -->
+      </equations>
+  </case>
+  <parameter_space>
+    <simulated_time value="150"/>
+    <print_interval value="0.001"/>
+    <confirm_on_exit value="false"/>
+    <output_format value="BINARY"/>
+  </parameter_space>
+</simulation>
+
+\end{lstlisting}
+\end{example}
+The phase separation process has a decaying intensity in the function of time, therefore the printing interval is adaptively modified with an exponential law to minimise the amount of simulation result files and keep the temporal sampling appropriate at the same time. The evolution of phase separation is shown in Figure \ref{fig:cahnhilliard_result} by the triangulation of the surface.
+\begin{figure}[h!]
+  \includegraphics[scale=0.6]{cahnhilliard_result.pdf}
+  \centering
+  \caption{Evolution of phases on the sphere.}
+  \label{fig:cahnhilliard_result}
+\end{figure}\vspace*{3pt}
+
+
 \subsection{Shallow water equations}
-\subsection{Granular material}
+\subsection{Solar system}
+The simulation of the solar system is a typical case of the n-body problem. The size of the objects are negligible, and all objects are in interaction with all the others, consequently, the equation on motion \equref{nbody_eom} stands here for all objects.
+Due to the space-time scale of the Solar system it is recommended to deviate from SI units to decrease the inaccuracy of floating point arithmetics. Here the unit mass is equal to the mass of Earth, the unit distance is considered as the average distance of the Sun and the Earth and finally, the unit length of time is one Earth-day. These units are summarised in Table \ref{tbl:astronomical_units}.
+\begin{table}
+\begin{center}
+\caption{Units in the Solar system simulation.}\label{tbl:astronomical_units}
+\begin{tabular}{ l r r }
+\toprule[1.5pt]
+\bf Name & \bf Unit & \bf Value \\
+\midrule
+Mass & am & $1.48093\cdot 10^{11}$kg \\
+Length & al & $5.97\cdot 10^{24}$m \\
+Time & at & $86400$s \\
+\bottomrule[1.25pt]
+\end{tabular}
+\end{center}
+\end{table}
+Hence the gravitational constant is obtained as $\gamma=9.16324149\cdot 10^{-10}al^3/(am\cdot at^2)$. The inial conditions of the Solar system is set to its state at 26 February 2000 00:00 (in heliocentric coordinates) introduced in Table \ref{tbl:solarsystempos} and \ref{tbl:solarsystemvel}. 
+\begin{table}
+\begin{center}
+\caption{Mass of the Solar system planets.}\label{tbl:solarsystemmass}
+\begin{tabular}{ l r }
+\toprule[1.5pt]
+\bf Object & \bf Mass [am] \\
+\midrule
+Sun & $3.32965046E+05$ \\
+Mercury & $5.52604794E-02$ \\
+Venus & $8.14805143E-01$ \\
+Earth & $1.00000000E+00$ \\
+Mars & $1.07447770E-01$ \\
+Jupiter & $3.17831793E+02$ \\
+Saturn & $9.51620463E+01$ \\
+Uranus & $1.45359582E+01$ \\
+Neptune & $1.71471140E+01$ \\
+Pluto & $2.19381947E-03$ \\
+\bottomrule[1.25pt]
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}
+\begin{center}
+\caption{Positions of the Solar system planets.}\label{tbl:solarsystempos}
+\begin{tabular}{ l r r r }
+\toprule[1.5pt]
+\bf Object & \multicolumn{3}{c}{\bf Position [al]} \\
+\midrule
+Sun & $0.00000000E+00$  &  $0.00000000E+00$  &  $0.00000000E+00$ \\
+Mercury & $-2.52875447E-01$  &  $1.89224913E-01$  &  $1.27303389E-01$ \\
+Venus & $1.76553728E-02$  &  $-6.69151143E-01$  &  $-3.02159352E-01$ \\
+Earth & $-9.18428887E-01$  &  $3.62942965E-01$  &  $1.57355594E-01$ \\
+Mars & $1.21524135E+00$  &  $7.34458249E-01$  &  $3.04013819E-01$ \\
+Jupiter & $3.77100459E+00$  &  $3.08343707E+00$  &  $1.22979557E+00$ \\
+Saturn & $6.22706292E+00$  &  $6.43146103E+00$  &  $2.38855445E+00$ \\
+Uranus & $1.47277740E+01$  &  $-1.24945774E+01$  &  $-5.68075252E+00$ \\
+Neptune & $1.71271712E+01$  &  $-2.31196703E+01$  &  $-9.88938537E+00$ \\
+Pluto & $-9.80572133E+00$  &  $-2.83258746E+01$  &  $-5.88297808E+00$ \\
+\bottomrule[1.25pt]
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}
+\begin{center}
+\caption{Velocities of the Solar system planets.}\label{tbl:solarsystemvel}
+\begin{tabular}{ l r r r }
+\toprule[1.5pt]
+\bf Object & \multicolumn{3}{c}{\bf Velocity [al/at]} \\
+\midrule
+Sun & $0.00000000E+00$  &  $0.00000000E+00$  &  $0.00000000E+00$ \\
+Mercury & $-2.46358641E-02$  &  $-1.86902265E-02$  &  $-7.42852534E-03$ \\
+Venus & $2.02895362E-02$  &  $8.45044680E-04$  &  $-9.03879795E-04$ \\
+Earth & $-7.15783449E-03$  &  $-1.47042339E-02$  &  $-6.37503091E-03$ \\
+Mars & $-7.19683749E-03$  &  $1.17815694E-02$  &  $5.59840572E-03$ \\
+Jupiter & $-5.13821923E-03$  &  $5.54945851E-03$  &  $2.50386823E-03$ \\
+Saturn & $-4.47179956E-03$  &  $3.42854338E-03$  &  $1.60843860E-03$ \\
+Uranus & $2.67440395E-03$  &  $2.51272963E-03$  &  $1.06268844E-03$ \\
+Neptune & $2.59474895E-03$  &  $1.69891959E-03$  &  $6.30906866E-04$ \\
+Pluto & $3.06493917E-03$  &  $-1.12260841E-03$  &  $-1.27466162E-03$ \\
+\bottomrule[1.25pt]
+\end{tabular}
+\end{center}
+\end{table}
+
 \subsection{Dam-break}
+\subsubsection{Problem definition}
+One of the most famous test cases of SPH is the two dimensional free surface dam break problem. The geometry of the tank and the initially resting fluid column is presented in Figure \ref{fig:dambreaksph}. The imaginary plate at the fluid is removed in $t=0$ and the fluid collapses in the tank.
+In Lagrangian frame the governing equations of the fluid can be written as
+\begin{flalign} \label{eq:dambreaksph}
+\begin{split}
+&\frac{d\rho}{dx}=-\rho\nabla v, \\
+&\frac{dv}{dt}=\frac{1}{\rho}\nabla p+g, \\
+\end{split}
+\end{flalign}
+where $p$ and $\rho$ are the pressure and density of the fluid, $v$ is the Lagrangian fluid velocity and $g$ is the gravitational acceleration.
+\subsubsection{Numerical model and results}
+The discretised form of the equations \equref{eq:dambreaksph} can be constructed similarly to the former SPH test cases:
+\begin{flalign} \label{eq:dambreak_sph_discretised}
+\begin{split}
+&\frac{d\rho_i}{dt}=-\rho_i\sum{(v_j-v_i)\frac{m_j}{\rho_j}\nabla W_{ij}}+0.1hc\sum_j{2(\rho_j-\rho_i)\frac{r_{ij}}{|r_{ij}|^2}\frac{m_j}{\rho_j}\nabla W_{ij}}, \\
+&\frac{dv_i}{dt}=-\sum_j{\bigg(\frac{p_i}{\rho_i^2}+\frac{p_j}{\rho_j^2}\bigg)m_j\nabla W_{ij}}+g, \\
+\end{split}
+\end{flalign}
+where $h$ is the smoothing distance of the kernel function $W_{ij}$. The second term on the RHS of the first equation in \equref{eq:dambreak_sph_discretised} is the artificial density diffusion term often referred as $\delta$-SPH. Since the equations \equref{eq:dambreak_sph_discretised} do not imply constraint between the velocity and pressure fields, an additional state equation
+\begin{equation} \label{eq:eos}
+p_i=c^2(\rho-\rho_0),
+\end{equation}
+is required to couple the equations, where $\rho_0$ is the rest density of the fluid and $c$ is the speed of acoustic waves, which is usually reduced to ensure numerical stability. Although exact incompressibility cannot be achieved using \equref{eq:eos}, tuning the value of $c$, the density variation can be limited to $1\%$.
+
+
+
+
+\subsection{Granular material}
 \section{The Nauticle open-source code}
 This section comments the role of each source and header file of Nauticle. For better clarity the explanation is divided into different groups marked by the subsequent sections.
 \subsection{Nodes of the expression tree}
@@ -1149,7 +1354,7 @@ Declares / defines the class for user defined equations. It contains two express
 Declares / defines the class that manages user defined variables, constants, fields, and particle system. \\
 
 \textbf{pmCase.h / pmCase.cpp} \\
-Declares / defines the class that manages workspace and user defined equations. It solves the equations too. \\
+Declares / defines the class that manages workspace and user defined equations. It also solves the equations. \\
 
 \textbf{pmGrid.h / pmGrid.cpp} \\
 Declares / defines the class for particle generation. Two ways: rectangular grid, or particles from .xyz file. \\
