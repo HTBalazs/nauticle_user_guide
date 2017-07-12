@@ -1189,7 +1189,7 @@ The phase separation process has a decaying intensity in the function of time, t
 \subsection{Particle damper}
 Particle dampers are one of the widely investigated damper systems today. Although there exists several analytical models to design and scale a particle damper, the complexity of the problem still requires experimental and numerical investigation. The geometry of the tank, the number and sizes of particles, the materials, the operating frequency are only some of the huge amount of possibilities concerning the development of particle dampers.
 \subsubsection{Problem definition}
-This test case simulates a simple three-dimensional oscillating cubic shell filled with spheres of identical radii. The cube is initially at rest in the position $z_0=-0.05$ m. The layout of the particle damper is presented in Figure \ref{fig:particle_damper_geom}, furthermore the values of the introduced quantities are summarised in Table \ref{tbl:particle_damper_values}. The system is supported by the ideal linear spring  merely damped by the 
+This test case simulates a simple three-dimensional oscillating cubic tank filled with spheres of identical radii. The tank is initially at rest in the position $z_0=-0.05$ m. The layout of the particle damper is presented in Figure \ref{fig:particle_damper_geom}, furthermore the values of the introduced quantities are summarised in Table \ref{tbl:particle_damper_values}. The system is supported by the ideal linear spring  merely damped by the 
 \begin{figure}[h!]
   \includegraphics[scale=0.5]{particle_damper_geom.pdf}
   \centering
@@ -1203,10 +1203,10 @@ This test case simulates a simple three-dimensional oscillating cubic shell fill
 \toprule[1.5pt]
 \bf Name & \bf Description & \bf Value \\
 \midrule
-$M$ & Cube mass & $20$ kg \\
+$M$ & Tank mass & $20$ kg \\
 $s$ & Spring stiffness & $78956.8$ kg/s$^2$ \\
 $R$ & Particle radius & $4$ mm \\
-$L$ & Cube edge length & $0.1$ m \\
+$L$ & Tank edge length & $0.1$ m \\
 $\rho$ & Particle mass density & $7850$ kg/m$^3$ \\
 $E$ & Particle Young modulus & $2.06$ MPa \\
 $\nu$ & Particle Poisson's ratio & $0.33$ \\
@@ -1217,24 +1217,24 @@ $N$ & Number of particles & 567 \\
 \end{center}
 \end{table}
 \subsubsection{Numerical model and results}
-A simple representaion of the physical model is introduced in this section with the notation that other valid solutions are also possible. To simplify the model and lacking the cube the simulation domain is chosen to be the interior of the cube. Since the domain is fixed, this assumption means that the simulation of the particle motion and collision is interpreted in the moving coordinate system associated to the cube and the excitation of the particles is governed purely by a time-dependent acceleration field superposed with the gravitational acceleration. The boundaries of the domain are set to symmetric, which plays an important role in the calculation of the forces acting on the cube. For the sake of simplicity the angular momentum of the particles is neglected.
-The one-dimensional equation of motion of the cube is
-\begin{flalign} \label{eq:cube_ode}
+A simple representaion of the physical model is introduced in this section with the notation that other valid solutions are also possible. To simplify the model and lacking the tank the simulation domain is chosen to be the interior of the tank. Since the domain is fixed, this assumption means that the simulation of the particle motion and collision is interpreted in the moving coordinate system associated to the tank and the excitation of the particles is governed purely by a time-dependent acceleration field superposed with the gravitational acceleration. The boundaries of the domain are set to symmetric, which plays an important role in the calculation of the forces acting on the tank. For the sake of simplicity the angular momentum of the particles is neglected.
+The one-dimensional equation of motion of the tank is
+\begin{flalign} \label{eq:tank_ode}
 \begin{split}
 M\ddot{Z}+SZ=F(t), \\
 F(t) = -\sum_i{f_i}
 \end{split}
 \end{flalign}
-where $F(t)$ is the resultant of the particle forces $f_i$. The solution of the homogeneous part of \equref{cube_ode} is the harmonic function
-\begin{flalign} \label{eq:cube_sol}
+where $F(t)$ is the resultant of the particle forces $f_i$. The solution of the homogeneous part of \equref{tank_ode} is the harmonic function
+\begin{flalign} \label{eq:tank_sol}
 Z(t)=C_1sin(\gamma t)+C_2cos(\gamma t),
 \end{flalign}
-where $C_1$ and $C_2$ are constants depending on the initial conditions and $gamma=\sqrt(S/M)$. Due to the lack of damping, the oscillation has constant amplitude. The particles' motion is determined by
+where $C_1$ and $C_2$ are constants depending on the initial conditions and $\gamma^2=S/M$. Due to the lack of damping, the oscillation has constant amplitude. The particles' motion is determined by
 \begin{flalign} \label{eq:spheres_ode}
-\ddot r_i=\frac{1}{m_i}\sum_j{F^c(r_{ji},v_{ji},...)}+\frac{1}{m_i}\sum_j{F^b(r_{ji},v_{ji},...)}+g=\frac{1}{m_i}\sum_j{F^c(r_{ji},v_{ji},...)}+\frac{f_i}{m_i}+g,
+\frac{d^2r_i}{dt^2}=\frac{1}{m_i}\sum_j{F^c(r_{ji},v_{ji},...)}+\frac{1}{m_i}\sum_j{F^b(r_{ji},v_{ji},...)}+g=\frac{1}{m_i}\sum_j{F^c(r_{ji},v_{ji},...)}+\frac{f_i}{m_i}+g,
 \end{flalign}
-where $F^c$ denotes the collection of the introduced collision laws introduced in Section \ref{sec:DEM_intro}. The second term on the RHS of \equref{eq:spheres_ode} operates with the same collision laws at the symmetric boundaries, which in turn contributes to \equref{eq:cube_ode}.
-During the simulation the cube position, velocity and acceleration has to be calculated at each time steps. These quantities are considered as variables and calculated by the numerical solution of \equref{cube_ode}. The configuration file for the particle damper problem is as follows:
+where $F^c$ denotes the collection of the introduced collision laws introduced in Section \ref{sec:DEM_intro}. The second term on the RHS of \equref{eq:spheres_ode} operates with the same collision laws at the symmetric boundaries, which in turn contributes to \equref{eq:tank_ode}.
+During the simulation the tank position, velocity and acceleration has to be calculated at each time steps. These quantities are considered as variables and calculated by the numerical solution of \equref{tank_ode}. The configuration file for the particle damper problem is as follows:
 \begin{example}{Particle damper configuration file}{}
 \lstset{basicstyle=\tiny}
 \begin{lstlisting}[language=XML]
@@ -1310,17 +1310,17 @@ After running the configuration file in Nauticle the individual particle elevati
 \begin{figure}[h!]
   \includegraphics[scale=0.6]{particle_damper_time_series.pdf}
   \centering
-  \caption{Particle (red) and tank (black) elevation in the function of time.}
+  \caption{Elevation of particles (red) and the tank (black) in the function of time.}
   \label{fig:particle_damper_geom}
 \end{figure}\vspace*{3pt}
-As it is seen the oscillation amplitude is being reduced significantly until the particles start to gather at the bottom due to the smaller oscillation.
+As it is seen the oscillation amplitude is being reduced significantly until the particles start to gather at the bottom due to the smaller peak acceleration.
 
 
 \subsection{Shear layer instability}
 \subsection{Solar System}
 The simulation of the solar System is a typical case of the n-body problem. The size of the objects are negligible and all objects are in interaction with all the others, consequently, the equation of motion \equref{nbody_eom} stands for all objects.
 Due to the space-time scale of the Solar System it is recommended to deviate from SI units to decrease the inaccuracy of floating point arithmetics. Here the unit mass is equal to the mass of Earth (am), the unit distance is considered as the average distance of the Sun and the Earth (al) and finally, the unit length of time is one Earth-day (at). These units are summarised in Table \ref{tbl:astronomical_units}.
-\begin{table}
+\begin{table} [h!]
 \begin{center}
 \caption{Units in the Solar System simulation.}\label{tbl:astronomical_units}
 \begin{tabular}{ l r r }
