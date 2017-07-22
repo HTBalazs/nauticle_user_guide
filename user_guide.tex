@@ -1,4 +1,4 @@
-\newcommand{\nauticleversion}{1.0.170221}
+\newcommand{\nauticleversion}{1.0.170720}
 \newcommand{\installer}{install-\nauticleversion{}.sh}
 \newcommand{\uninstaller}{uninstall-\nauticleversion{}.sh}
 \newcommand{\execname}{\textbf{nauticle}}
@@ -134,6 +134,8 @@ urlcolor=black}
 \newcommand{\puretext}[1]{\quad\textrm{#1}\quad}
 \newcommand{\myparagraph}[1]{\paragraph{#1}\mbox{}\\}
 \newcommand{\mysection}[1]{\section{#1}\label{sec:#1}}
+\newcommand{\firstpartial}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\secondpartial}[2]{\frac{\partial^2 #1}{\partial #2^2}}
 \usepackage{mathtools}
 \DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
 
@@ -195,7 +197,7 @@ urlcolor=black}
 \includegraphics[width=0.6\textwidth]{nauticle_logo.pdf}\\[0.5cm]
 {\large A particle based meshless numerical computational environment}\\ [5cm]
 % Title
-{ \huge \bfseries User Guide for Nauticle \\[0.2cm] }
+{ \huge \bfseries User's Guide for Nauticle \\[0.2cm] }
 \color{nauticlegreen}
 \rule{\linewidth}{1.5mm} \\[0.5cm]
 \color{black}
@@ -403,7 +405,7 @@ where $r_i$ is the position vector, $m_i$ and $\Theta_i$ are the mass and moment
 &\delta_{ij}=(R_i+R_j)-(r_j-r_j)n
 \end{flalign}
 between particle $i$ and $j$. Here $R$ is the particle radius and $n=(r_i-r_j)/|r_i-r_j|$ is the normalised direction vector within the particles in collision. The layout and notations of the collision of two adjecent particles are shown in Figure \ref{fig:collision}.
-\begin{figure}
+\begin{figure}[htb!]
   \includegraphics[scale=0.8]{collision.pdf}
   \centering
   \caption{Particle collision layout with the length of overlap $\delta$.}
@@ -435,7 +437,7 @@ are the spring and damping coefficients of the collision in normal direction wit
 \myparagraph{Tangential contact force and torque model}
 The tangential or shear forces between colliding particles are determined by the relative linear and angular velocities $v_{ij}$ and $\omega_{ij}$. The tangential contact force model is written as
 \begin{flalign} \label{DEM_tangential_force}
-&F_{ij}^t=\min(k^tv^t,k^fF_{ij}^n),
+&F_{ij}^t=\min(k^vv^t,k^fF_{ij}^n),
 \end{flalign}
 where $k^v$ and $k^f$ are the tangential viscous damping and Coulomb friction coefficients respectively and
 \begin{flalign} \label{DEM_tangential_velocity}
@@ -448,7 +450,7 @@ is the relative tangential velocity denoting the actual distance of particle $i$
 Note that particle interaction forces and torques are calculated only when $\delta>0$, otherwise, the particles $i$ and $j$ are not in interaction with each other. The equations \equref{eq:restrictionDEM_EOM} form a system of $N$ algebraic equations that can be solved explicitly.\\
 
 
-\subsubsection{Discrete Vortex Method (DVM)}
+\subsubsection{Discrete Vortex Method (DVM)} \label{sec:DVM}
 Vortex methods are meshless numerical tools for modelling inviscid fluid flow governed by point vortices. The basic idea behind vortex methods is that vorticity is a conserved quantity in inviscid flows, consequently the flow field can be determined using a set of point vortices drifting in the velocity field induced by them.
 First of all the vorticity is defied as the curl of the velocity field $v$:
 \begin{flalign} \label{DVM_vorticity}
@@ -535,13 +537,13 @@ conditions are satisfied.
 One of the specific properties of particle methods is the continually changing particle layout. Since no interparticle structure is considered, the connectivity may change (except for Lagrangian or unbounded mollifier functions) with the particle positions. The naive ($N^2$ complexity) determination of particle interactions is usually unsatisfactory due to its high performance requirement, therefore a more efficient neighbour searching algorithm should be used instead. Here a simple and memory-efficient algorithm is implemented. The basic idea of the method is that a so-called hash key is assigned to each particle depending on the cell it occupies. Since all the particles that occupy the same cell obtain identical hash keys, the list of particles of the adjacent cells can be constructed easily.
 
 The bottleneck of this algorithm is that the particle positions need to be sorted by the hash keys, which can be compuationally expensive. However, when the particle layout does not change too much before the recalculation of the hash keys, the sorting process is cheap because most of the particle's hash keys are already organised in the proper order.\\
-\begin{figure}[h!]
+\begin{figure}[htb!]
   \includegraphics[scale=0.6]{hash_key.pdf}
   \centering
   \caption{Unfolding the two-dimensional domain to one dimension. The same procedure can be applied in three dimensions.}
   \label{fig:unfolding}
 \end{figure}\vspace*{3pt}
-\begin{figure}[h!]
+\begin{figure}[htb!]
   \includegraphics[scale=0.6]{nnsearch.pdf}
   \centering
   \caption{Indexing particle positions with Start and End arrays.}
@@ -556,14 +558,14 @@ To determine interparticle connectivity the following steps are performed in Nau
 \end{enumerate}
 Later, during the calculation of particle interactions, the particles of the adjacent cells of each particle are checked using the start and end arrays to mark the potential neighbours. Finally, the actual neighbours are calculated based on the set of potential neighbours. Due to computational optimisation, the steps above are not performed until the particle layout is changed.
 
-\subsection{Periodic and symmetric boundaries}
-The computational domain $\Omega$ defined in (TODO) forms the particles' frame of reference. Since no particle can ever exist outside the domain, the bounding surface $\partial\Omega$ applies symmetric or periodic rules to avoid the exclusion by handling particles that intend to cross the surface. Obviously, the opposite boundaries of $\Omega$ have to be both symmetric or periodic boundaries.
-Both conditions imply the repositioning of exiting particle $i$ applying the
+\subsection{Periodic, symmetric and cut-off boundaries}
+The computational domain $\Omega$ defined in (TODO) forms the particles' frame of reference. Since no particle can ever exist outside the domain, the bounding surface $\partial\Omega$ applies symmetric or periodic rules to avoid the exclusion by handling particles that intend to cross the surface. One more special case, a cut-off boundary is implemented as well to avoid undesireable interactions. Obviously, the opposite boundaries of $\Omega$ have to be both periodic, symmetric os cut-off boundaries.
+Each type of boundary conditions imply the repositioning of exiting particle $i$ applying the
 \begin{flalign} \label{eq:restriction}
 r_i\leftarrow r_i mod \lambda
 \end{flalign}
 restriction, where $\lambda$ is the size of $\Omega$. However, exiting should ideally never occur in case of symmetric boundary. The restriction \equref{eq:restriction} does not provide either correct periodic or symmetric boundary conditions in itself. To take these conditions into account, the overhanging influence radius should be replaced or reflected properly. The physical interpretation of influence radius in the vicinity of periodic ($\partial\Omega_p$) and symmetric ($\partial\Omega_s$) boundaries is shown in Figure \ref{fig:periodic_symmetric}.
-\begin{figure}
+\begin{figure}[htb!]
   \includegraphics[scale=0.8]{periodic_symmetric_2.pdf}
   \centering
   \caption{ Shifting (blue) and reflecting (green) influence radius in the vicinity of periodic and symmetric boundary conditions respectively.}
@@ -571,7 +573,7 @@ restriction, where $\lambda$ is the size of $\Omega$. However, exiting should id
 \end{figure}\vspace*{3pt}
 During the calculation of interparticle distance vector $r_{ji}=r_j-r_i$ at the boundary the ensemble formula
 \begin{flalign} \label{eq:boundary_interparticle_distance}
-&r_{ji}=r_{ji}+\beta\delta(\delta-1)(r_{max}-r_j)+\beta\delta(\delta+1)(r_{min}-r_j)+(\beta-1)\floor{\frac{r_{ji}-r_{min}}{\lambda}}\lambda
+&r_{ji}=r_{ji}+\beta\delta(\delta-1)(r_{max}-r_j)+\beta\delta(\delta+1)(r_{min}-r_j)+(\beta-1)\delta\lambda
 \end{flalign}
 is applied, where $\beta=0$ or $1$ for periodic or symmetric boundaries respectively, $\lambda$ is the size of $\Omega$, the operator $\floor{\cdot}$ denotes floor, $\delta$ is given by
 \begin{flalign} \label{eq:delta_perioic_symmetric}
@@ -583,15 +585,14 @@ with $g_j$ being the grid coordinate of particle $j$ and $N_c$ denotes the numbe
 \end{flalign}
 Since in case of the symmetric condition the interactions are calculated by particle mirroring, the vector and tensor quantities should be reflected using the reflection matrix
 \begin{flalign} \label{eq:reflection_periodic_symmetric}
-&R=I^d(-2\beta_i+1)^T,
+&R=I^d(-2\beta_i+1),
 \end{flalign}
-where $I^d$ is a $d$ dimensional identity tensor. Note that in one dimension ($d=1$), it is required to distinguish scalars and single element vectors, because only scalar quantities should remain the same after reflection.
-
+where $I^d$ is a $d$ dimensional identity tensor. Note that in one dimension ($d=1$), it is required to distinguish scalars and single element vectors, because only scalar quantities should remain the same after reflection. Note that in case of certain vector quantities like angular velocity, the reflection \equref{eq:reflection_periodic_symmetric} could be physically incorrect. Such cases required to be treated particularly at symmetric boundaries.
 
 
 \subsection{Expression tree}
 The generality of the numerical solver requires the analysis of user-defined expressions and equations (see Section \ref{UDE}). In Nauticle the expression parsing is based on the expression tree shown in Figure \ref{fig:expression_tree}.
-\begin{figure}[h!]
+\begin{figure}[htb!]
   \includegraphics[scale=0.5]{expression_tree.pdf}
   \centering
   \caption{Expression tree: hierarchy of expression elements. The gray nodes in the tree indicate abstract types.}
@@ -599,7 +600,7 @@ The generality of the numerical solver requires the analysis of user-defined exp
 \end{figure}\vspace*{3pt}
 
 After the transformation of a user-defined expression to Reverse Polish Notation (RPN), the nodes of the expression tree can be employed to interpret the expresssion and perform its solution recursively. A simple example is presented by Figure \ref{fig:expression_example}.
-\begin{figure}[h]
+\begin{figure}[htb!]
   \includegraphics[scale=0.5]{expression_example.pdf}
   \centering
   \caption{Example for construction of expressions using the nodes of the expression tree.}
@@ -621,7 +622,7 @@ The other main branch of the expression tree is the branch of operators acting o
 The first two groups of operators evaluate operations on single quantities or particlewise field quantities (e.g. addition of two fields), while the interactions require field data (e.g. value of field maximum or minimum).
 \myparagraph{Arithmetic operators}
 The supported arithmetic operators are presented in Table \ref{tbl:arop}.
-\begin{table}
+\begin{table} [hbt!]
 \begin{center}
 \caption{Supported arithmetic operators in Nauticle.}\label{tbl:arop}
 \begin{tabular}{ l c c c c }
@@ -631,7 +632,9 @@ The supported arithmetic operators are presented in Table \ref{tbl:arop}.
 Addition & "+" & 2 & $[n \times m] + [n \times m]$\\ 
 Subtraction & "-" & 2 & $[n \times m] - [n \times m]$\\ 
 Product & "*" & 2 & $[n \times m] * [m \times n]$\\ 
+Division & "/" & 2 & $[n \times m] / [1 \times 1]$\\ 
 Term by term product & ":" & 2 & $[n \times m] : [n \times m]$\\ 
+Term by term division & "\%" & 2 & $[n \times m] \% [n \times m]$\\ 
 Power & "$\hat{\ }$" & 2 & $[n \times m] \hat{\ } [1 \times 1]$\\ 
 Positive & "+" & 1 & $[n \times m]$\\ 
 Negative & "-" & 1 & $[n \times m]$\\ 
@@ -641,7 +644,7 @@ Negative & "-" & 1 & $[n \times m]$\\
 \end{table}
 The arithmetic operators are valid for tensors with conforming sizes (last column of Table \ref{tbl:arop}).
 \myparagraph{Arithmetic functions}
-The arithmetic functions supported by Nauticle are summarised in Table \ref{tbl:arfc}. It should be noted here that complex numbers are currently not supported by the tensor implementation, therefore some of the functions may give uninterpretable results (e.g. $\sqrt{-1}$ is not a number in Nauticle).
+The arithmetic functions supported by Nauticle are summarised in Table \ref{tbl:arfc}. It should be noted here that complex numbers are currently not supported by the tensor implementation, therefore some of the functions may give indefinite results (e.g. $\sqrt{-1}$ is not a number in Nauticle).
 \begin{table}
 \begin{center}
 \caption{Supported arithmetic functions in Nauticle.}\label{tbl:arfc}
@@ -662,12 +665,14 @@ Cross product & $cross$ & 2 & Tanspose & $transpose$ & 1 \\
 Exponential & $exp$ & 1 & Trunc & $trunc$ & 1 \\
 Floor & $floor$ & 1 & Matrix determinant & $determinant$ & 1 \\
 Greater than & $gt$ & 2 & Matrix inverse & $inverse$ & 1 \\
-Natural logarithm & $log$ & 1 & Equal & $eq$ & 2 \\
-Less than & $lt$ & 2 & Logical and & $and$ & 2 \\
+Greater than or equal & $gte$ & 2 & Logical condition & $if$ & 3 \\
+Less than & $lt$ & 2 & Equal & $eq$ & 2 \\
+Less than or equal & $lte$ & 2 & Not equal & $neq$ & 2 \\
+Natural logarithm & $log$ & 1 & Logical and & $and$ & 2 \\
 Vector lenght & $magnitude$ & 1 & Logical or & $or$ & 2 \\
 Maximum & $max$ & 2 & Logical negation & $not$ & 1 \\
 Minimum & $min$ & 2 & Logical exclusive or & $xor$ & 2 \\
-Tensor element & $elem$ & 3 & Logical condition & $if$ & 3 \\
+Tensor element & $elem$ & 3 & Identity tensor & $identity$ & 1 \\
 \bottomrule[1.25pt]
 \end{tabular}
 \end{center}
@@ -685,7 +690,8 @@ The simplest functions in this branch are presented in Table \ref{tbl:fsearch}. 
 \midrule
 Field maximum & $fmax$ & 1 & $[1 \times 1]$\\ 
 Field minimum & $fmin$ & 1 & $[1 \times 1]$\\ 
-Field average & $fmean$ & 1 & $[1 \times 1]$\\
+Field average & $fmean$ & 1 & $[n \times n]$\\
+Field sum & $fsum$ & 1 & $[n \times n]$\\
 \bottomrule[1.25pt]
 \end{tabular}
 \end{center}
@@ -702,12 +708,12 @@ To define and simulate a problem a form (XML-document) is needed to be passed to
 
 \textbf{Parameter space}: An object to hold information about the solution data export.
 
-\begin{figure}[h!]
+\begin{figure}[htb!]
   \includegraphics[scale=0.55]{workflow.pdf}
   \centering
   \caption{Outline of the simulation flow.}
   \label{fig:workflow}
-\end{figure}\vspace*{3pt}
+\end{figure}
 
 The schematic diagram of a simulation is presented in Figure \ref{fig:workflow}. After the parsing of the input files on the left, the case assembler builds the case, which is handled by the simulation scheduler. The latter is responsible for the calculation flow and parallelisation. The result files are saved by the VTK-writer governed by the case manager. 
 As soon as the simulation scheduler sends a step request, the solution of the UDE's is carried out by the case itself. The change of the value of any symbol contained by the workspace during the solution is automatically updated. Optionally, any of the result files can be applied as initial conditions for a further simulation (see Section \ref{sec:XML}).
@@ -728,14 +734,14 @@ The legacy VTK file formats consist of five basic parts.
 In Nauticle the result files contain the whole case including the workspace and UDE's. The DATASET type is POLYDATA, while the symbols and UDE's are stored as string formatted data.
 \subsubsection{XML-document} \label{sec:XML}
 The XML-document is the most important and fundamental input file of any simulation executed by Nauticle. No simulation can be executed in absense of the configuration XML-file. Nevertheless, they can be distinguished by the data they contain. The most important advantage of the application of XML-files is that they support random access to the stored data, therefore the user is not required to follow strict rules during the construction of the simulation problem.
-\begin{figure}[h!]
+\begin{figure}[htb!]
   \includegraphics[scale=1.05]{xml_intro.pdf}
   \centering
   \caption{Structure of the XML-document.}
   \label{fig:xml_intro}
 \end{figure}\vspace*{3pt}
 A simple document is presented in Figure \ref{fig:xml_intro}, in which the whole workspace and list of equations to be passed to the solver are defined and no external sources are used except for the nodal coordinates (which is optional). Another way of problem initialisation is the application of a former simulation result stored in VTK file. Despite of that, XML-documents cannot be omitted, but are used to refer to the desired input file. This type of initialisation allows a significantly simpler XML-document as it is illustrated in Figure \ref{fig:xml_intro_simple}.
-\begin{figure}[h!]
+\begin{figure}[htb!]
   \includegraphics[scale=1]{xml_intro_simple.pdf}
   \centering
   \caption{Structure of the XML-document referring to a former simulation result.}
@@ -953,11 +959,12 @@ where the arguments\_list consists of the option listed in Table \ref{tbl:runtim
 
 \section{Nauticle interface} \label{sec:interface}
 
+
 \section{Examples} \label{sec:examples}
 \subsection{Couette-flow}
 \subsubsection{Problem definition}
 One of the simplest and most frequently investigated fundamental test case in fluid mechanics is the laminar Couette-flow. The upper one of the two infinite sized parallel walls shown in Figure \ref{fig:couette} is moving in $y$ direction with velocity $v=1$m/s.
-\begin{figure}[h!]
+\begin{figure}[htb!]
   \includegraphics[scale=0.7]{couette.pdf}
   \centering
   \caption{Temperature-dependent laminar Couette-flow between parallel walls.}
@@ -1089,7 +1096,7 @@ After the discretisation the XML-document can be constructed:
 \end{lstlisting}
 \end{example}
 Since the initial conditions of both the temperature and velocity are uniform, the solution of the discretised equations needs to be repeated until the result is sufficiently formed. In this case the simulated time is $100$s. The final result is compared with the analytical solution in Figure \ref{fig:couette_results}.
-\begin{figure}[h!]
+\begin{figure}[htb!]
   \includegraphics[scale=0.4]{couette_result.pdf}
   \centering
   \caption{Couette-flow results comparison.}
@@ -1178,7 +1185,7 @@ where again, $W_{ij}$ is normalised in two dimensions. The configuration file to
 \end{lstlisting}
 \end{example}
 The phase separation process has a decaying intensity in the function of time, therefore the printing interval is adaptively modified with an exponential law to minimise the amount of simulation result files and keep the temporal sampling appropriate at the same time. The evolution of phase separation is shown in Figure \ref{fig:cahnhilliard_result} by the triangulation of the surface.
-\begin{figure}[h!]
+\begin{figure}[htb!]
   \includegraphics[scale=0.6]{cahnhilliard_result.pdf}
   \centering
   \caption{Evolution of phases on the sphere.}
@@ -1189,14 +1196,14 @@ The phase separation process has a decaying intensity in the function of time, t
 \subsection{Particle damper}
 Particle dampers are one of the widely investigated damper systems today. Although there exists several analytical models to design and scale a particle damper, the complexity of the problem still requires experimental and numerical investigation. The geometry of the tank, the number and sizes of particles, the materials, the operating frequency are only some of the huge amount of possibilities concerning the development of particle dampers.
 \subsubsection{Problem definition}
-This test case simulates a simple three-dimensional oscillating cubic tank filled with spheres of identical radii. The tank is initially at rest in the position $z_0=-0.05$ m. The layout of the particle damper is presented in Figure \ref{fig:particle_damper_geom}, furthermore the values of the introduced quantities are summarised in Table \ref{tbl:particle_damper_values}. The system is supported by the ideal linear spring  merely damped by the 
-\begin{figure}[h!]
-  \includegraphics[scale=0.5]{particle_damper_geom.pdf}
+This test case simulates a simple three-dimensional oscillating cubic tank filled with spheres of identical radii. The tank is initially at rest in the position $z_0=-0.05$ m. The layout of the particle damper is presented in Figure \ref{fig:particle_damper_geom}, furthermore the values of the introduced quantities are summarised in Table \ref{tbl:particle_damper_values}. The system is supported by the ideal linear spring  merely damped by the collision of the included set of spheres.
+\begin{figure}[htb!]
+  \includegraphics[scale=0.4]{particle_damper_geom.pdf}
   \centering
   \caption{Physical layout of the particle damper.}
   \label{fig:particle_damper_geom}
 \end{figure}\vspace*{3pt}
-\begin{table}[h!]
+\begin{table}[htb!]
 \begin{center}
 \caption{Parameters of the particle damper simulation.}\label{tbl:particle_damper_values}
 \begin{tabular}{ c l r } 
@@ -1216,24 +1223,28 @@ $N$ & Number of particles & 567 \\
 \end{tabular}
 \end{center}
 \end{table}
-\subsubsection{Numerical model and results}
-A simple representaion of the physical model is introduced in this section with the notation that other valid solutions are also possible. To simplify the model and lacking the tank the simulation domain is chosen to be the interior of the tank. Since the domain is fixed, this assumption means that the simulation of the particle motion and collision is interpreted in the moving coordinate system associated to the tank and the excitation of the particles is governed purely by a time-dependent acceleration field superposed with the gravitational acceleration. The boundaries of the domain are set to symmetric, which plays an important role in the calculation of the forces acting on the tank. For the sake of simplicity the angular momentum of the particles is neglected.
 The one-dimensional equation of motion of the tank is
 \begin{flalign} \label{eq:tank_ode}
 \begin{split}
-M\ddot{Z}+SZ=F(t), \\
-F(t) = -\sum_i{f_i}
+M\ddot{Z}+SZ=F^b, \\
+F^b = -\sum_i{f^b_i}
 \end{split}
 \end{flalign}
-where $F(t)$ is the resultant of the particle forces $f_i$. The solution of the homogeneous part of \equref{tank_ode} is the harmonic function
+where $F(t)$ is the resultant of the particle-boundary forces $f^b_i$. The latter appears in the equation of motion of the particles:
+\begin{flalign} \label{eq:spheres_ode}
+\frac{d^2r_i}{dt^2}=\frac{F^c_i}{m_i}+\frac{F^b_i}{m_i}+g,
+\end{flalign}
+where $F^c$ and $F^b$ are the particle-particle and particle-wall collision forces respectively.
+\subsubsection{Numerical model and results}
+A simple representaion of the three-dimensional physical model is introduced in this section with the notation that other valid solutions are also possible. To simplify the model and lacking the tank the simulation domain is chosen to be the interior of the tank. Since the domain is fixed, this assumption means that the simulation of the particle motion and collision is interpreted in the moving coordinate system associated to the tank and the excitation of the particles is governed purely by a time-dependent acceleration field superposed with the gravitational acceleration. The boundaries of the domain are set to symmetric, which plays an important role in the calculation of the forces acting on the tank. For the sake of simplicity the angular momentum of the particles is neglected. The solution of the homogeneous part of \equref{tank_ode} is the harmonic function
 \begin{flalign} \label{eq:tank_sol}
 Z(t)=C_1sin(\gamma t)+C_2cos(\gamma t),
 \end{flalign}
-where $C_1$ and $C_2$ are constants depending on the initial conditions and $\gamma^2=S/M$. Due to the lack of damping, the oscillation has constant amplitude. The particles' motion is determined by
-\begin{flalign} \label{eq:spheres_ode}
-\frac{d^2r_i}{dt^2}=\frac{1}{m_i}\sum_j{F^c(r_{ji},v_{ji},...)}+\frac{1}{m_i}\sum_j{F^b(r_{ji},v_{ji},...)}+g=\frac{1}{m_i}\sum_j{F^c(r_{ji},v_{ji},...)}+\frac{f_i}{m_i}+g,
+where $C_1$ and $C_2$ are constants depending on the initial conditions and $\gamma^2=S/M$. Due to the lack of damping, the oscillation has constant amplitude. The particles' motion is determined by \equref{eq:spheres_ode} written as
+\begin{flalign} \label{eq:spheres_ode_full}
+\frac{d^2r_i}{dt^2}=\frac{F^c_i}{m_i}+\frac{F^b_i}{m_i}+g=\frac{1}{m_i}\sum_j{f^c_i(r_{ji},v_{ji},...)}+\frac{F^b_i}{m_i}+g,
 \end{flalign}
-where $F^c$ denotes the collection of the introduced collision laws introduced in Section \ref{sec:DEM_intro}. The second term on the RHS of \equref{eq:spheres_ode} operates with the same collision laws at the symmetric boundaries, which in turn contributes to \equref{eq:tank_ode}.
+where $f^c$ denotes the collection of the collision laws introduced in Section \ref{sec:DEM_intro}. The second term on the RHS of \equref{eq:spheres_ode} operates with the same collision laws at the symmetric boundaries, which in turn contributes to \equref{eq:tank_ode}.
 During the simulation the tank position, velocity and acceleration has to be calculated at each time steps. These quantities are considered as variables and calculated by the numerical solution of \equref{tank_ode}. The configuration file for the particle damper problem is as follows:
 \begin{example}{Particle damper configuration file}{}
 \lstset{basicstyle=\tiny}
@@ -1307,35 +1318,150 @@ During the simulation the tank position, velocity and acceleration has to be cal
 \end{lstlisting}
 \end{example}
 After running the configuration file in Nauticle the individual particle elevation are visualised in Figure \ref{fig:particle_damper_result} together with the bottom and top positions of the tank.
-\begin{figure}[h!]
+\begin{figure}[htb!]
   \includegraphics[scale=0.6]{particle_damper_time_series.pdf}
   \centering
   \caption{Elevation of particles (red) and the tank (black) in the function of time.}
-  \label{fig:particle_damper_geom}
+  \label{fig:particle_damper_result}
 \end{figure}\vspace*{3pt}
 As it is seen the oscillation amplitude is being reduced significantly until the particles start to gather at the bottom due to the smaller peak acceleration.
 
 
-\subsection{Shear layer instability}
-\subsection{Solar System}
-The simulation of the solar System is a typical case of the n-body problem. The size of the objects are negligible and all objects are in interaction with all the others, consequently, the equation of motion \equref{nbody_eom} stands for all objects.
+\subsection{Breaking of free jet}
+\subsubsection{Problem definition}
+This section provides a simple test case of the break of two-dimensional parallel shear layers generated by a free jet of infinite length. The flow is considered to be inviscid and free of vorticity sources resulting in the exact conservation of vorticity:
+\begin{flalign} \label{eq:vorticity_constant}
+\frac{d\omega}{dt}=\frac{\partial\omega}{\partial t}+v\nabla\omega=0.
+\end{flalign}
+Due to its mathematical background, the fulfillment of constraint \equref{eq:vorticity_constant} is simply feasible by the Discrete Vortex Method presented in \ref{sec:DVM}.
+\subsubsection{Numerical model and results}
+The shear layer on the edges of the free jet are resolved by a set of point vortices with opposite signs along the two edges as drawn in Figure \ref{fig:shear_geom}.
+\begin{figure}[htb!]
+  \includegraphics[scale=0.6]{shear_geom.pdf}
+  \centering
+  \caption{Free jet (dark blue) represented by a series of point vortices along the shear layers. Yellow dots mark the tracer partciels. }
+  \label{fig:shear_geom}
+\end{figure}\vspace*{3pt}
+Since the free jet is assumed to be infinite, a periodic boundary has been chosen in streamwise direction to simulate a $L=5$ m long section of the jet. Obviously the simulated length affects the maximum size of the developing flow structures. The length $5$ m and the number of vortex points are sufficiently large to resolve the process of jet-breaking. To capture the actual phyisical instability it is inevitable to apply a small initial perturbation of the vortex positions. Such a perturbation could be a sinusoidal shift in spanwise direction with a small amplitude $10^{-6}$ m and wavelength $L/5$ m.
+
+\begin{figure}[htb!]
+  \includegraphics[scale=0.6]{shear_result.pdf}
+  \centering
+  \caption{Free jet breaking within periodic boundaries. Lines denote velocity vectors of point vortices coloured by the velocity magnitude. Yellow spheres are weightless particles tracked through the velocity field induced by the set of point vortices. }
+  \label{fig:shear_result}
+\end{figure}\vspace*{3pt}
+
+\begin{table} [htb!]
+\begin{center}
+\caption{Parameters of the free jet simulation.}\label{tbl:shear_layer_values}
+\begin{tabular}{ c l r } 
+\toprule[1.5pt]
+\bf Name & \bf Description & \bf Value \\
+\midrule
+$L$ & Simulated length of the jet & $5$ m \\
+$\omega_i$ & Vorticity strength of each point vortex & $0.3$ 1/s \\
+$d$ & Width of the jet & $0.6$ m \\
+$\Delta x$ & distance between adjacent vortices & $0.05$ m \\
+$N_v$ & Number of point vortices & $200$ \\
+$N_t$ & Number of tracer particles & $250$ \\
+\bottomrule[1.25pt]
+\end{tabular}
+\end{center}
+\end{table}
+
+The simulation is executed using the configuration file below:
+\begin{samepage}
+\begin{example}{Shear layer configuration file}{}
+\lstset{basicstyle=\tiny}
+\begin{lstlisting}[language=XML]
+<?xml version="1.0" encoding="UTF-8"?>
+<simulation>
+  <case>
+    <workspace>
+      <constants>
+        <L value="5"/>
+        <c_s value="L/2"/>
+        <dx value="L/50"/>
+        <omega value="0.3"/>
+        <eps value="c_s/40"/>
+      </constants>
+      <variables>
+        <T value="0"/>
+        <dt value="0.02"/>
+      </variables>
+      <particle_system>
+        <domain>
+          <cell_size value="c_s"/>
+          <minimum value="0|0"/>
+          <maximum value="L/c_s|L/c_s"/>
+          <boundary value="periodic|periodic"/>
+        </domain>
+        <grid>
+          <gid value="-1"/>
+          <gpos value="0|L/2-3*dx-dx/2"/>
+          <gsize value="L|dx"/>
+          <goffset value="0|0"/>
+          <gip_dist value="dx/2|dx"/>
+        </grid>
+        <grid>
+          <gid value="0"/>
+          <gpos value="0|L/2-dx/2"/>
+          <gsize value="L|dx"/>
+          <goffset value="0|0"/>
+          <gip_dist value="dx/5|dx"/>
+        </grid>
+        <grid>
+          <gid value="1"/>
+          <gpos value="0|L/2+3*dx-dx/2"/>
+          <gsize value="L|dx"/>
+          <goffset value="0|0"/>
+          <gip_dist value="dx/2|dx"/>
+        </grid>
+      </particle_system>
+      <fields>
+        <w value="gid*omega"/>
+        <v value="0|0"/>
+        <noise value="sin(elem(r,0,0)*25/pi)*dx*1e-5*e_j"/>
+      </fields>
+    </workspace>
+      <equations>
+        <initial_noise value="r=r+noise" condition="eq(T,0)"/>
+        <time value="T=T+dt"/>
+        <velocity value="v=dvm(w,eps,c_s)"/>
+        <integrate value="r=euler(r,v,dt)"/>
+      </equations>
+  </case>
+  <parameter_space>
+    <simulated_time value="1.8"/>
+    <print_interval value="dt"/>
+    <confirm_on_exit value="0"/>
+    <file_start value="0"/>
+    <output_format value="BINARY"/>
+  </parameter_space>
+</simulation>
+\end{lstlisting}
+\end{example}
+\end{samepage}
+
+\subsection{Simulation of the Solar System}
+The simulation of the Solar System is a typical case of the n-body problem. The size of the objects are negligible and all objects are in interaction with all the others, consequently, the equation of motion \equref{nbody_eom} stands for all objects.
 Due to the space-time scale of the Solar System it is recommended to deviate from SI units to decrease the inaccuracy of floating point arithmetics. Here the unit mass is equal to the mass of Earth (am), the unit distance is considered as the average distance of the Sun and the Earth (al) and finally, the unit length of time is one Earth-day (at). These units are summarised in Table \ref{tbl:astronomical_units}.
-\begin{table} [h!]
+\begin{table} [htb!]
 \begin{center}
 \caption{Units in the Solar System simulation.}\label{tbl:astronomical_units}
 \begin{tabular}{ l r r }
 \toprule[1.5pt]
 \bf Name & \bf Unit & \bf Value \\
 \midrule
-Mass & am & $1.48093\cdot 10^{11}$kg \\
-Length & al & $5.97\cdot 10^{24}$m \\
-Time & at & $86400$s \\
+Mass & am & $5.97\cdot 10^{24}$ kg \\
+Distance & al & $1.48093\cdot 10^{11}$ m \\
+Time & at & $86400$ s \\
 \bottomrule[1.25pt]
 \end{tabular}
 \end{center}
 \end{table}
 Hence the gravitational constant is obtained as $\gamma=9.16324149\cdot 10^{-10}\rm{al}^3/(\rm{am}\cdot \rm{at}^2)$. The initial conditions of the Solar System is set to its state at 26 February 2000 00:00 (in heliocentric coordinates) introduced in Table \ref{tbl:solarsystempos} and \ref{tbl:solarsystemvel}. 
-\begin{table}
+\begin{table} [htb!]
 \begin{center}
 \caption{Mass of the Solar System planets.}\label{tbl:solarsystemmass}
 \begin{tabular}{ l r }
@@ -1357,7 +1483,7 @@ Pluto & $2.19381947E-03$ \\
 \end{center}
 \end{table}
 
-\begin{table}
+\begin{table} [htb!]
 \begin{center}
 \caption{Positions of the Solar system planets.}\label{tbl:solarsystempos}
 \begin{tabular}{ l r r r }
@@ -1379,7 +1505,7 @@ Pluto & $-9.80572133E+00$  &  $-2.83258746E+01$  &  $-5.88297808E+00$ \\
 \end{center}
 \end{table}
 
-\begin{table}
+\begin{table} [htb!]
 \begin{center}
 \caption{Velocities of the Solar system planets.}\label{tbl:solarsystemvel}
 \begin{tabular}{ l r r r }
@@ -1401,35 +1527,26 @@ Pluto & $3.06493917E-03$  &  $-1.12260841E-03$  &  $-1.27466162E-03$ \\
 \end{center}
 \end{table}
 
-\subsection{Lid-driven cavity}
+\subsection{Dam-break problem}
 \subsubsection{Problem definition}
-One of the most famous test cases of SPH is the two dimensional wall-driven flow inside a square cavity with edge length $L$. The geometry of the cavity and is presented in Figure \ref{fig:liddrivencavitysph}. 
-\begin{figure}[h!]
-  \includegraphics[scale=0.6]{liddrivencavity.pdf}
+One of the most famous test cases of SPH is the two dimensional dam-break flow inside a rectangular, initially dry tank presented in Figure \ref{fig:dambreak_geom}. 
+\begin{figure}[htb!]
+  \includegraphics[scale=0.6]{dam_break_geom.pdf}
   \centering
-  \caption{2D flow in a square cavity driven by the lid.}
-  \label{fig:liddrivencavitysph}
+  \caption{Initial configuration of the classical two-dimensional dam-break problem.}
+  \label{fig:dambreak_geom}
 \end{figure}\vspace*{3pt}
 
 In Lagrangian frame the governing equations of the fluid can be written as
-\begin{flalign} \label{eq:liddrivencavitysph}
+\begin{flalign} \label{eq:dam_break_pde}
 \begin{split}
-&\nabla v=0, \\
-&\frac{dv}{dt}=\frac{1}{\rho}\nabla p+\nu\Delta v, \\
+&\frac{d\rho}{dt}=-\rho\nabla v, \\
+&\frac{dv}{dt}=-\frac{1}{\rho}\nabla p+\nu\Delta v, \\
 \end{split}
 \end{flalign}
-where $p$ and $\rho$ are the pressure and density of the fluid, $v$ is the Lagrangian fluid velocity and $\nu$ is the physical kinematic viscosity of the fluid. The corresponding no-slip boundary conditions demand the velocity constraints
-\begin{flalign} \label{eq:liddrivencavitysphbc}
-\begin{split}
-&v\bigg(\pm\frac{L}{2},y\bigg)=0, \\
-&v\bigg(x,-\frac{L}{2}\bigg)=0, \\
-&v_y\bigg(x,\pm\frac{L}{2}\bigg)=0, \\
-&v_x\bigg(x,\frac{L}{2}\bigg)=v_{lid}, \\
-\end{split}
-\end{flalign}
-where $v_{lid}$ is the velocity of the closing lid over the cavity.
+where $p$ and $\rho$ are the pressure and density of the fluid, $v$ is the Lagrangian fluid velocity and $\nu$ is the physical kinematic viscosity of the fluid.
 \subsubsection{Numerical model and results}
-The discretised form of the equations \equref{eq:liddrivencavitysph} can be constructed similarly to the former SPH test cases:
+The discretised form of the equations \equref{eq:dam_break_pde} can be constructed similarly to the former SPH test cases:
 \begin{flalign} \label{eq:dambreak_sph_discretised}
 \begin{split}
 &\frac{d\rho_i}{dt}=-\rho_i\sum{(v_j-v_i)\frac{m_j}{\rho_j}\nabla W_{ij}}+0.1hc\sum_j{2(\rho_j-\rho_i)\frac{r_{ij}}{|r_{ij}|^2}\frac{m_j}{\rho_j}\nabla W_{ij}}, \\
@@ -1438,16 +1555,259 @@ The discretised form of the equations \equref{eq:liddrivencavitysph} can be cons
 \end{flalign}
 where $h$ is the smoothing distance of the kernel function $W_{ij}$. The second term on the RHS of the equations \equref{eq:dambreak_sph_discretised} is the artificial density and velocity diffusion term respectively. The application of the density diffusion term is often referred as the $\delta$-SPH formulation. Since the equations \equref{eq:dambreak_sph_discretised} do not imply constraint between the velocity and pressure fields, an additional state equation
 \begin{equation} \label{eq:eos}
-p_i=c^2(\rho-\rho_0)+p_0,
+p_i=c^2(\rho-\rho_0),
 \end{equation}
-is required to couple the equations, where $\rho_0$ is the rest density of the fluid, $p_0$ is the background pressure and $c$ is the speed of acoustic waves artificially reduced to ensure numerical stability. Although exact incompressibility cannot be achieved using \equref{eq:eos}, the density variation can be limited to $\delta\rho=1\%$ by choosing $c=10v_{lid}$.
+is required to couple the equations, where $\rho_0$ is the rest density of the fluid and $c$ is the speed of acoustic waves artificially reduced to ensure numerical stability beside reasonable time step size. Although exact incompressibility cannot be achieved using \equref{eq:eos}, the density variation can be limited to $\delta\rho=2\%$ by choosing $c=10\sqrt{gH}$.
+Assuming the parameters of Table \ref{tbl:dam_break_params}, the following configuration file is required for Nauticle:
+\begin{samepage}
+\begin{example}{Shear layer configuration file}{}
+\lstset{basicstyle=\tiny}
+\begin{lstlisting}[language=XML]
+<?xml version="1.0" encoding="UTF-8"?>
+<simulation>
+  <case>
+    <workspace>
+      <constants>
+        <Lx value="2"/>
+        <Ly value="1"/>
+        <H value="1"/>
+        <W value="H/2"/>
+        <csize value="Lx/56"/>
+        <dx value="csize/2.1"/>
+        <h value="csize/2"/>
+        <rho0 value="1000"/>
+        <mass value="dx^2*rho0"/>
+        <g value="0|-9.81"/>
+        <c value="10*sqrt(H*magnitude(g))"/>
+        <fluid value="0"/>
+        <wall value="1"/>
+        <CFL value="0.2"/>
+      </constants>
+      <variables>
+        <dt value="0.0001"/>
+        <T value="0"/>
+      </variables>
+      <particle_system>
+        <domain>
+          <cell_size value="csize"/>
+          <minimum value="-Lx/2/csize-1|-Ly/2/csize-1"/>
+          <maximum value="Lx/2/csize+1|2*Ly/csize"/>
+          <boundary value="0|0"/>
+        </domain>
+        <grid>
+          <gid value="fluid"/>
+          <gpos value="-Lx/2|-Ly/2"/>
+          <gsize value="W|H"/>
+          <goffset value="0|0"/>
+          <gip_dist value="dx|dx"/>
+        </grid>
+        <grid>
+          <gid value="wall"/>
+          <gpos value="-Lx/2-csize|-Ly/2-csize"/>
+          <gsize value="csize|Ly+2*csize"/>
+          <goffset value="0|0"/>
+          <gip_dist value="dx|dx"/>
+        </grid>
+        <grid>
+          <gid value="wall"/>
+          <gpos value="-Lx/2|-Ly/2-csize"/>
+          <gsize value="Lx|csize"/>
+          <goffset value="0|0"/>
+          <gip_dist value="dx|dx"/>
+        </grid>
+        <grid>
+          <gid value="wall"/>
+          <gpos value="Lx/2|-Ly/2-csize"/>
+          <gsize value="csize|Ly+2*csize"/>
+          <goffset value="0|0"/>
+          <gip_dist value="dx|dx"/>
+        </grid>
+      </particle_system>
+      <fields>
+        <a value="0|0"/>
+        <v value="0|0"/>
+        <rho value="if(eq(gid,fluid),elem(g,1,0)*rho0*(elem(r,1,0)-H+Ly/2)/c^2+rho0,rho0)"/>
+        <rho_dot value="0"/>
+        <p value="0"/>
+      </fields>
+    </workspace>
+      <equations>
+        <time value="T=T+dt"/>
+        <continuity0 value="rho_dot=-rho*sph_D00(v,mass,rho,Wp52220,csize)+0.1*c*h*sph_L00(rho,mass,rho,Wp52220,csize)"/>
+        <irho0 value="rho=euler(rho,rho_dot,dt)"/>
+        <EOS0 value="p=c^2*(rho-rho0)"/>
+        <acc0 value="a=-1/rho*sph_G11(p,mass,rho,Wp32220,csize)+0.005*sph_L00(v,mass,rho,Wp32220,csize)+g"/>
+        <vel0 value="v=euler(v,a,dt)" condition="eq(gid,fluid)"/>
+        <pos0 value="r=euler(r,v,dt)" condition="eq(gid,fluid)"/>
+        <new_dt value="dt=CFL*min(sqrt(h/fmax(magnitude(a))),h/c)"/>
+      </equations>
+  </case>
+  <parameter_space>
+    <simulated_time value="2"/>
+    <print_interval value="0.02"/>
+    <confirm_on_exit value="0"/>
+    <output_format value="ASCII"/>
+  </parameter_space>
+</simulation>
+\end{lstlisting}
+\end{example}
+\end{samepage}
+\begin{table} [htb!]
+\begin{center}
+\caption{Parameters of the dam break simulation.}\label{tbl:dam_break_params}
+\begin{tabular}{ l c r }
+\toprule[1.5pt]
+\bf Parameter & \bf Name & \bf Value \\
+\midrule
+Tank width & $L_x$ & $2$ m \\
+Tank height & $L_y$ & $1$ m \\
+Fluid initial height & $H$ & $1$ m \\
+Fluid initial width & $W$ & $0.5$ m \\
+Kinematic viscosity & $\nu$ & $0.005$ m \\
+\bottomrule[1.25pt]
+\end{tabular}
+\end{center}
+\end{table}
+Running the simulation of the collapse of the fluid column takes a while. Nevertheless, a few snapshots of the free surface shape is shown in Figure \ref{fig:dam_break_result}. 
+\begin{figure}[htb!]
+  \includegraphics[scale=0.5]{dam_break_result.pdf}
+  \centering
+  \caption{Shape of the free surface in different time instants. Particles are coloured by their velocities. }
+  \label{fig:dam_break_results}
+\end{figure}\vspace*{3pt}
 
 
+\subsection{Stefan-problem}
+\subsubsection{Problem definition}
+Consider an $L=1$ m long one-dimensional solid beam of temperature $T_0=-0.2$ C$^\circ$ with the melting temperature $T_m=0$ C$^\circ$. The ice is melted by the heat flux induced on one end by the constant temperature $T_w=0.1$ C$^\circ$. All the other sides of the beam are completely isolated from the environment. Figure \ref{fig:stefan_problem_beam} illustrates the phenomenon of the Stefan-problem.
+\begin{figure}[htb!]
+  \includegraphics[scale=0.4]{stefan_problem_beam.pdf}
+  \centering
+  \caption{Melting solid beam heated on the left side. Darker and lighter shaded areas mark liquid and solid phases respectively. The yellow line referes to the interface with the melting temperature $T_m$.}
+  \label{fig:stefan_problem_beam}
+\end{figure}\vspace*{3pt}
+The schematic layout of thThe temperatue distribution along the beam and the marching of the liquid-ice interface is determined by the equations below:
+\begin{flalign} \label{eq:stefan_problem_heat}
+&\frac{\partial T}{\partial t}=a\frac{\partial^2 T}{\partial x^2}, \\
+&\frac{\partial S}{\partial t}=-\frac{\partial T}{\partial x}\bigg\vert_{S(t),t}.
+\end{flalign} \label{eq:stefan_problem_heat}
+Equation \equref{eq:stefan_problem_heat} is the one-dimensional heat equation now discribes the temperature diffusion in both the liquid and solid phases. The constant $a$ is the heat conduction coefficient with different values per each phase: $a_l=0.002$ m$^2/$s and $a_s=0.005$ m$^2/$s. The motion of the position $S(t)$ of the liquid-solid interface is proportional to the slope of the temperature, hence the heat flux at $S(t)$. By definition, the interface temperature is identical with the melting temperature, requiring the Dirichlet-condition to move together with the interface along the beam. Thus, the boundary conditions obtain the form of
+\begin{flalign} \label{eq:stefan_problem_bc}
+\begin{split}
+& T(0,t)=0.1, \\
+& T(S(t),t)=T_0, \\
+& q=\firstpartial{T}{x}\bigg\vert_{x=L}=0
+\end{split}
+\end{flalign}
+with the  the initial conditions
+\begin{flalign} \label{eq:stefan_problem_ic}
+\begin{split}
+& T(x,0)=T_0=-0.2, \\
+& S(0)=0.
+\end{split}
+\end{flalign}
+\subsubsection{Numerical model and results}
+To obtain the approximate solution in Nauticle, the discretised forms of \equref{eq:stefan_problem_heat} and \equref{eq:stefan_problem_interface} need to be constructed at first. Here, the SPH scheme is applied again to obtain
+\begin{flalign} \label{eq:stefan_problem_sph}
+\begin{split}
+&\firstpartial{T}{t}=a_f\sum_j{2(T_j-T_i)\frac{r_{ij}}{|r_{ij}|^2}\frac{m_j}{\rho_j}\firstpartial{W_{ij}}{x_j}}, \\
+&\firstpartial{S}{t}=-\sum_j(T_j-T_i)\frac{m_j}{\rho_j}\firstpartial{W_{ij}}{x_j}.
+\end{split}
+\end{flalign}
+The Dirichlet-conditions \equref{eq:stefan_problem_bc} are simply constrained in each time step as $S(t)$ changes. However, a minor issue remained to consider: temperature derivative in Section \equref{eq:stefan_problem_heat} refers to the liquid phase only. This constraint has to be satisfied during the solution. The configuration file to run the simulation of the Stefan-problem is as follows:
+\begin{samepage}
+\begin{example}{Shear layer configuration file}{}
+\lstset{basicstyle=\tiny}
+\begin{lstlisting}[language=XML]
+<?xml version="1.0" encoding="UTF-8"?>
+<simulation>
+  <case>
+    <workspace>
+      <constants>
+        <L value="1"/>
+        <csize value="L/50"/>
+        <dx value="csize/2.1"/>
+        <rho0 value="1000"/>
+        <mass value="dx*rho0"/>
+        <a_liquid value="0.002"/>
+        <a_solid value="0.005"/>
+        <wall value="0"/>
+        <liquid value="1"/>
+        <interface value="2"/>
+        <solid value="3"/>
+      </constants>
+      <variables>
+        <Time value="0"/>
+        <dt value="0.01"/>
+        <S value="dx*4"/>
+        <S_dot value="0"/>
+      </variables>
+      <particle_system>
+        <domain>
+          <cell_size value="csize"/>
+          <minimum value="-1"/>
+          <maximum value="L/csize+1"/>
+          <boundary value="0"/>
+        </domain>
+        <grid>
+          <gid value="solid"/>
+          <gpos value="0"/>
+          <gsize value="L"/>
+          <goffset value="0"/>
+          <gip_dist value="dx"/>
+        </grid>
+        <grid>
+          <gid value="wall"/>
+          <gpos value="-csize"/>
+          <gsize value="csize"/>
+          <goffset value="0"/>
+          <gip_dist value="dx"/>
+        </grid>
+      </particle_system>
+      <fields>
+        <T value="if(eq(gid,wall),0.2,-0.1)"/>
+        <T_dot value="0"/>
+        <x value="elem(r,0,0)"/>
+      </fields>
+    </workspace>
+      <equations>
+        <mb1 value="gid=interface" condition="and(gt(x,S-dx/2),lt(x,S+dx/2))"/>
+        <mb2 value="gid=liquid" condition="and(lt(x,S-dx/2-0.01),not(eq(gid,wall)))"/>
+        <mb3 value="gid=solid" condition="gt(x,S+dx/2)"/>
+        <bc1 value="T=0" condition="eq(gid,interface)"/>
+        <heat_liquid value="T_dot=a_liquid*sph_L00(T,mass,rho0,Wp22210,csize)" condition="eq(gid,liquid)"/>
+        <heat_solid value="T_dot=a_solid*sph_L00(T,mass,rho0,Wp22210,csize)" condition="eq(gid,solid)"/>
+        <i1 value="T=euler(T,T_dot,dt)"/>
+        <eq2 value="S_dot=fmax(if(eq(gid,interface),-sph_G00(if(neq(gid,solid),T,0),mass,rho0,Wp22210,csize),0))"/>
+        <i2 value="S=euler(S,S_dot,dt)"/>
+        <time value="Time=Time+dt"/>
+      </equations>
+  </case>
+  <parameter_space>
+    <simulated_time value="40"/>
+    <print_interval value="50*dt"/>
+    <confirm_on_exit value="0"/>
+    <output_format value="ASCII"/>
+  </parameter_space>
+</simulation>
+\end{lstlisting}
+\end{example}
+\end{samepage}
+Please note that the temperature-dependency of the density is ignored during the simulation, furhtermore, the condition $q=0$ is satisfied naturally by the meshless SPH interpolant. As the result of the simulation the temperature distribution of the liquid and solid phases are plotted in Figure \ref{fig:stefan_problem_result}.
+\begin{figure}[htb!]
+  \includegraphics[scale=0.5]{stefan_problem_result.pdf}
+  \centering
+  \caption{Temperature distribution of the liquid and solid domains evaluated in different time instants.}
+  \label{fig:stefan_problem_result}
+\end{figure}\vspace*{3pt}
 
-
-\subsection{Granular material}
-\subsection{Biharmonic equation}
-
+Finally, the propagation of the liquid-solid interface is displayed as a functionof time in Figure \ref{fig:stefan_problem_result_s}.
+\begin{figure}[htb!]
+  \includegraphics[scale=0.5]{stefan_problem_result_s.pdf}
+  \centering
+  \caption{Propagation of the liquid-solid interface $S(t)$.}
+  \label{fig:stefan_problem_result_s}
+\end{figure}\vspace*{3pt}
 
 \section{The Nauticle open-source code}
 This section comments the role of each source and header file of Nauticle. For better clarity the explanation is divided into different groups marked by the subsequent sections.
@@ -1518,7 +1878,10 @@ Declares / defines the Filter node in the expression tree. This is an abstract c
 \textbf{pmSph\_operator.h} \\
 Declares / defines functions for SPH interactions and differential operators. \\
 
-\subsubsection{Files for simulation case}
+\textbf{pmDvm\_operator.h / pmDvm\_operator.cpp} \\
+Declares / defines functions for DVM interaction. \\
+
+\subsection{Files for simulation case}
 
 \textbf{pmCommand\_parser.h / pmCommand\_parser.cpp} \\
 Declares / defines the functions that manage terminal commands. \\
@@ -1577,7 +1940,10 @@ Declares / defines the functions for VTK writing. \\
 \textbf{pmXML\_processor.h / pmXML\_processor.cpp} \\
 Declares / defines the functions for extracting data from xml file. \\
 
-\subsubsection{Other files}
+\subsection{Further files}
+\textbf{nauticle\_constants.h} \\
+Defines constants used by the Nauticle source and header files. \\
+
 \textbf{pmRandom.h / pmRandom.cpp} \\
 Declares / defines the functions for random number generation in a range. \\
 
@@ -1599,9 +1965,12 @@ Implements a class for objects that are not allowed to be copied.\\
 \textbf{pmVersion.h}\\
 Contains Nauticle major and minor version information.\\
 
+\section{Nauticle future}
+
+\section{References}
 
 \section{Licenses}
-\subsection{VTK license}
+\subsection{BSD license}
 VTK is an open-source toolkit licensed under the BSD license.\\
 Copyright (c) 1993-2008 Ken Martin, Will Schroeder, Bill Lorensen \\
 All rights reserved.\\
@@ -1612,12 +1981,12 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-\subsection{Nauticle}
+\subsection{LGPL license}
 \noindent
-Copyright \textcopyright{} 2016-2017 by Balazs Toth \\
+Copyright \textcopyright{} 2016-2017 Balazs Toth \\
 \noindent
-BME Budapest University of Technology and Economics, Department of Hydraulic and Water Resources Engineering\\
-
+BME Budapest University of Technology and Economics, Department of Hydraulic and Water Resources Engineering.\\
+All rights reserved. \\
 Nauticle is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version Nauticle is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details You should have received a copy of the GNU Lesser General Public License along with Nauticle.  If not, see \myhref{http://www.gnu.org/licenses/}{http://www.gnu.org/licenses/}\\
  For more information please visit: \myhref{https://bitbucket.org/Nauticleproject/}{https://bitbucket.org/Nauticleproject/}
 
