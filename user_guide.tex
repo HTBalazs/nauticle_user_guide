@@ -133,6 +133,7 @@ urlcolor=black}
 \newcommand{\norm}[1]{\left\lVert#1\right\rVert}
 \newcommand{\puretext}[1]{\quad\textrm{#1}\quad}
 \newcommand{\myparagraph}[1]{\paragraph{#1}\mbox{}\\}
+\newcommand{\mysubparagraph}[1]{\subparagraph{#1}\mbox{}\\}
 \newcommand{\mysection}[1]{\section{#1}\label{sec:#1}}
 \newcommand{\firstpartial}[2]{\frac{\partial #1}{\partial #2}}
 \newcommand{\secondpartial}[2]{\frac{\partial^2 #1}{\partial #2^2}}
@@ -300,19 +301,19 @@ Nauticle itself can be considered as an empty frame, until at least one numerica
 
 
 
-\subsubsection{N-body dynamics}
+\subsubsection{N-body problem}
 The investigation of the dynamics of celestial objects with gravitational interaction has been motivated by the desire to calculate and predict the motion of the planets in the Solar system for arbitrary past or future times. The physical problem to solve in such a problem is often referred as the N-body problem.
 \myparagraph{Equation of motion}
 In the multibody system the motion of a single object is governed by
-\begin{flalign} \label{nbody_eom}
-&\frac{d^2r_i}{dt^2}=\gamma\sum_j^N{\frac{m_im_j}{(r_i-r_j)^2}n},
+\begin{flalign} \label{eq:nbody_eom}
+&\frac{d^2r_i}{dt^2}=\gamma\sum_j^N{\frac{m_im_j}{(r_j-r_i)^2}n_{ji}},
 \end{flalign}
-where $r_i$ is the position of the $i^{th}$ object $\gamma$ is the gravitational constant, $m_i$ is the mass of object $i$, $N$ is the number of objects in the system and $n=(r_i-r_j)/|r_i-r_j|$ is the normalised direction vector between the objects $i$ and $j$. Considering the planets as rotationally invariant spherical objects, their angular motion does not influence the translational motions. This model has $N^2$ computational complexity.
+where $r_i$ is the position of the $i^{th}$ object $\gamma$ is the gravitational constant, $m_i$ is the mass of object $i$, $N$ is the number of objects in the system and $n_{ji}=(r_j-r_i)/|r_j-r_i|$ is the normalised direction vector between the objects $i$ and $j$. Considering the planets as rotationally invariant spherical objects, their angular motion does not influence the translational motions. This model has $N^2$ computational complexity.
 
 
 
 
-\subsubsection{Smoothed Particle Hydrodynamics (SPH)}
+\subsubsection{Smoothed Particle Hydrodynamics (SPH)} \label{sec:SPH_intro}
 In the late 1970's the first papers on Smoothed Particle Hydrodynamics (SPH) were published by R.A. Gingold and J.J. Monaghan [TODO] and independently by B. Lucy [TODO]. One of the motivations to construct SPH was the necessity of numerical methods dealing with boundaryless problems. Initially SPH was applied in astrophysical simulations, later, in the  early 1990's the first applications to fluid and solid mechanics problems appeared. During  the past two decades increasing attention was focused on SPH in both scientific and industrial areas, and the most significant progress of the development is done in the past fifteen years.\\
 SPH is a fully meshless collocation scheme representing continuum fields with spatially distributed set of particles (meshless interpolation). The basic idea of SPH is the generalised interpolation
 \begin{flalign} \label{convolution_delta}
@@ -335,7 +336,7 @@ The kernel function $W(r-r',\sigma)$ has infinite or finite influence radius, wi
 \end{flalign}
 Here $B'$ is a spherical volume around $r$ with a radius of $\Delta$. \\
 The discretisation of \equref{convolution_kernel} to a cloud of particles is written as
-\begin{flalign} \label{discrete_convolution}
+\begin{flalign} \label{eq:discrete_convolution}
   \langle A(r_i)\rangle=\sum_{j}{A(r_j)W(r_i-r_j)\frac{m_j}{\rho_j}},
 \end{flalign}
 where $m_j$ and $\rho_j$ are the particle mass and density values of particle $j$ respectively. \\
@@ -385,6 +386,12 @@ which has a special variant
 \end{flalign}
 which is used to approximate the expression $\nabla b(r) \nabla A(r)$ with $b$ being an arbitrary function.
 Employing the differential operators (\ref{corrected_diffop1}-\ref{secondorder_diffop2}), the SPH-discretised form of partial differential equations can be constructed.
+
+Finally, a special averaging method, the XSPH interpolant
+\begin{flalign} \label{eq:XSPH_op}
+  \langle A(r_i)\rangle=\sum_{j}{(A(r_j)-A(r_i))W(r_i-r_j)\frac{m_j}{\rho_j}}
+\end{flalign}
+is often applied to the velocity field in fluid simulations to improve spatial distribution of particles.
 
 
 
@@ -437,9 +444,9 @@ are the spring and damping coefficients of the collision in normal direction wit
 \myparagraph{Tangential contact force and torque model}
 The tangential or shear forces between colliding particles are determined by the relative linear and angular velocities $v_{ij}$ and $\omega_{ij}$. The tangential contact force model is written as
 \begin{flalign} \label{DEM_tangential_force}
-&F_{ij}^t=\min(k^vv^t,k^fF_{ij}^n),
+&F_{ij}^t=\min(k^vv^t,\phi F_{ij}^n),
 \end{flalign}
-where $k^v$ and $k^f$ are the tangential viscous damping and Coulomb friction coefficients respectively and
+where $k^v$ and $\phi $ are the tangential viscous damping and Coulomb friction coefficients respectively and
 \begin{flalign} \label{DEM_tangential_velocity}
 &v^t=v_{ij}-(v_{ij}n)n+R_i'n\times\omega_i+R_j'n\times\omega_j,
 \end{flalign}
@@ -556,7 +563,8 @@ To determine interparticle connectivity the following steps are performed in Nau
   \item Sorting particles and the fields by the array of hash keys,
   \item Generating Start and End arrays containing the index of the first and last particle of each cell. The Start and End arrays are introduced in Figure \ref{fig:nnsearch}.
 \end{enumerate}
-Later, during the calculation of particle interactions, the particles of the adjacent cells of each particle are checked using the start and end arrays to mark the potential neighbours. Finally, the actual neighbours are calculated based on the set of potential neighbours. Due to computational optimisation, the steps above are not performed until the particle layout is changed.
+Later, during the calculation of particle interactions, the particles of the adjacent cells of each particle are checked using the start and end arrays to mark the potential neighbours. Finally, the actual neighbours are calculated based on the set of potential neighbours.
+Particle neighbour search is automatically managed during any simulation in Nauticle.
 
 \subsection{Periodic, symmetric and cut-off boundaries}
 The computational domain $\Omega$ defined in (TODO) forms the particles' frame of reference. Since no particle can ever exist outside the domain, the bounding surface $\partial\Omega$ applies symmetric or periodic rules to avoid the exclusion by handling particles that intend to cross the surface. One more special case, a cut-off boundary is implemented as well to avoid undesireable interactions. Obviously, the opposite boundaries of $\Omega$ have to be both periodic, symmetric os cut-off boundaries.
@@ -587,7 +595,8 @@ Since in case of the symmetric condition the interactions are calculated by part
 \begin{flalign} \label{eq:reflection_periodic_symmetric}
 &R=I^d(-2\beta_i+1),
 \end{flalign}
-where $I^d$ is a $d$ dimensional identity tensor. Note that in one dimension ($d=1$), it is required to distinguish scalars and single element vectors, because only scalar quantities should remain the same after reflection. Note that in case of certain vector quantities like angular velocity, the reflection \equref{eq:reflection_periodic_symmetric} could be physically incorrect. Such cases required to be treated particularly at symmetric boundaries.
+where $I^d$ is a $d$ dimensional identity tensor. 
+Note that in case of certain quantities like angular velocity, or vorticity the reflection \equref{eq:reflection_periodic_symmetric} could be physically incorrect. Such cases required to be treated particularly at symmetric boundaries.
 
 
 \subsection{Expression tree}
@@ -645,7 +654,7 @@ Negative & "-" & 1 & $[n \times m]$\\
 The arithmetic operators are valid for tensors with conforming sizes (last column of Table \ref{tbl:arop}).
 \myparagraph{Arithmetic functions}
 The arithmetic functions supported by Nauticle are summarised in Table \ref{tbl:arfc}. It should be noted here that complex numbers are currently not supported by the tensor implementation, therefore some of the functions may give indefinite results (e.g. $\sqrt{-1}$ is not a number in Nauticle).
-\begin{table}
+\begin{table} [htb!]
 \begin{center}
 \caption{Supported arithmetic functions in Nauticle.}\label{tbl:arfc}
 \begin{tabular}{ l l c | l l c }
@@ -678,10 +687,26 @@ Tensor element & $elem$ & 3 & Identity tensor & $identity$ & 1 \\
 \end{center}
 \end{table}
 
+Since numerical integrators form a special group of the arithmetic functions, they are summarised separately in Table \ref{tbl:arfc_int}. 
+\begin{table} [htb!]
+\begin{center}
+\caption{Supported arithmetic functions in Nauticle.}\label{tbl:arfc_int}
+\begin{tabular}{ l l c }
+\toprule[1.5pt]
+\bf Funcion & \bf Name & \bf Operands \\ 
+\midrule
+Explicit Euler & $euler$ & \multirow{3}{*}{$A$, $\dot A$, $\Delta t$}   \\
+RK2 predictor & $predictor$ & \\
+RK2 corrector & $corrector$ &  \\
+\bottomrule[1.25pt]
+\end{tabular}
+\end{center}
+\end{table}
+
 \myparagraph{Interactions}
 It was pointed out earlier in Section \ref{sec:environment} that any particle method can be considered as a collection of particle interaction laws. Accordingly, the interaction branch forms an essential part of not only the expression tree but also the Nauticle environment. This group of operators deals with particle interactions that certainly depend on field quantities (and the particle system). Furthermore the interaction branch provides an intermediate development interface, which is introduced in detail later in Section \ref{sec:interface}.
-The simplest functions in this branch are presented in Table \ref{tbl:fsearch}. Since the magnitude of an arbitrary tensor quantity is ambiguous, these field-functions can be evaluated only over scalar fields (last column of Table \ref{tbl:fsearch}). These functions have linear computational complexity.
-\begin{table}
+The simplest functions in this branch are presented in Table \ref{tbl:fsearch}. Since the magnitude of an arbitrary tensor quantity is ambiguous, these field-functions can be evaluated only over scalar fields (last column of Table \ref{tbl:fsearch}). These functions have approximately linear computational complexity.
+\begin{table}[htb!]
 \begin{center}
 \caption{Simple interaction operators.}\label{tbl:fsearch}
 \begin{tabular}{ l l c c }
@@ -696,7 +721,130 @@ Field sum & $fsum$ & 1 & $[n \times n]$\\
 \end{tabular}
 \end{center}
 \end{table}
-Further interaction operators in Nauticle belong to the particle methods presented in Section \ref{sec:implemented}.
+
+Further interaction operators in Nauticle summarised below are related to the operators of the particle methods presented in Section \ref{sec:implemented} providing the opportunity of simultaneous application of any of the interaction operators. For deeper explanation about the implementation of interaction operators please refer to Section \ref{sec:interface}.
+
+First of all, it is beneficial to describe the built-in filter functions, which form the basis of some of the particle methods. The implemented filter functions (kernels) in Nauticle are enumerated below.
+
+\textbf{Second order polynomial (quadratic)}:
+\begin{flalign} \label{eq:kernel_quadratic}
+W^{quadratic}(q)=\alpha_D\bigg(\frac{3}{16}q^2-\frac{3}{4}q+\frac{3}{4}\bigg),
+\end{flalign}
+where $D$ is the number of the dimensions, $\alpha_1=1/h$, $\alpha_2=2/(\pi h^2)$ and $\alpha_3=5/(4\pi h^3)$ are the normalisation coefficients, and $q=|r|/h$ with the smoothing distance $h$. The influence radius of the quadratic kernel equals $2q$. 
+
+\textbf{Third order polynomial (cubic)}:
+\[
+    W^{cubic}(q)= \alpha_D
+\begin{cases}
+  1-\frac{3}{2}q^2+\frac{3}{4}q^3;  & \text{if } q\leq1\\
+  \frac{1}{4}(2-q)^3& \text{if } 1 < q \leq 2
+\end{cases}
+\]
+Here $\alpha_1=2/(3h)$, $\alpha_2=10/(7\pi h^2)$ and $\alpha_3=1/(\pi h^3)$. The influence radius of the cubic kernel also equals $2q$.
+
+\textbf{Fifth order polynomial (quintic)}:
+\begin{flalign} \label{eq:kernel_quintic}
+W^{quintic}(q)=\alpha_D\bigg(1-\frac{q}{2}\bigg)^4(2q+1)
+\end{flalign}
+Here $\alpha_1=3/(4h)$, $\alpha_2=7/(4\pi h^2)$ and $\alpha_3=21/(16\pi h^3)$. And again, the influence radius of the quintic kernel equals $2q$.
+
+\textbf{Gaussian}:
+\begin{flalign} \label{eq:kernel_quintic}
+W^{Gaussian}(q)=\alpha_D\exp\bigg(-\frac{q^2}{4}\bigg)
+\end{flalign}
+The normalisation coefficients are $\alpha_1=1/(h\sqrt{2\pi})$, $\alpha_2=1/(2\pi h^2)$ and $\alpha_3=1/(2\pi h^2)^{3/2}$. The influence radius of the Gaussian kernel is infinite.
+
+Meshless interpolants often require not the kernel function itself but its derivative, therefore the first order derivative of the presented kernels are also included. To apply any of the filter kernels in Nauticle, a simple identifier explained in Figure \ref{fig:kernel_explanation.pdf} is associated to them.
+\begin{figure}[htb!]
+  \includegraphics[scale=0.3]{kernel_explanation.pdf}
+  \centering
+  \caption{Explanation of the identifier associated to filter kernels.}
+  \label{fig:kernel_explanation}
+\end{figure}
+
+\mysubparagraph{N-body operator}
+The simplest implemented scheme in Nauticle, namely the graviational N-body problem is simply considered as a single interaction operator identical to the RHS of \equref{eq:nbody_eom}. It is described in Table \ref{tbl:nbody_op}.
+\begin{table} [hbt!]
+\begin{center}
+\caption{N-body problem operator.}\label{tbl:nbody_op}
+\begin{tabular}{ l c l }
+\toprule[1.5pt]
+\bf Name & \bf Operands & \bf Description \\ 
+\midrule
+$nbody$ & $m$, $\gamma$ & $\frac{d^2r_i}{dt^2}=\gamma\sum_j^N{\frac{m_im_j}{(r_j-r_i)^2}n_{ji}}$ \\ 
+\bottomrule[1.25pt]
+\end{tabular}
+\end{center}
+\end{table}
+Obviously, mass $m$ is allowed to be a field to vary particlewise, while gravitational constant $\gamma$ is a true single value, even if a field is provided. In the latter case the zeroth value of the field is used over each interaction. The $nbody$ operator has quadratic computational complexity, due to the infinite gravitational influence radius. Note that it is not recommended to use this operator on particles close to the domain boundary of any type, furthermore, neither periodic nor symmetric boundary conditions are suitable to simulate infinite patterns of self-gravitating particle cloud.
+
+\mysubparagraph{SPH operators}
+In this section the usage of the same operators as in Section \ref{sec:SPH_intro} are discussed without the deduction of the interpolants.
+\begin{table} [hbt!]
+\begin{center}
+\caption{SPH operators.}\label{tbl:sph_op}
+\begin{tabular}{ l c l }
+\toprule[1.5pt]
+\bf Name & \bf Operands & \bf Description \\ 
+\midrule
+$sph\_S$ & \multirow{21}{*}{$A$, $m$, $\rho$, $W$, $R_{infl}$} & $\langle A_i\rangle=\sum_j{A_jW_{ij}\frac{m_j}{\rho_j}}$ \\ [2ex]
+$sph\_X$ &  & $\langle\hat{A}_i\rangle=\sum_j{(A_j-A_i)W_{ij}\frac{m_j}{\rho_j}}$ \\ [2ex]
+$sph\_G$ &  & $\langle grad(A_i)\rangle=\sum_j{A_j\otimes\nabla W_{ij}\frac{m_j}{\rho_j}}$ \\ [2ex]
+$sph\_G00$ &  & $\langle grad(A_i)\rangle=\sum_j{(A_j+A_i)\otimes\nabla W_{ij}\frac{m_j}{\rho_j}}$ \\ [2ex]
+$sph\_G01$ &  & $\langle grad(A_i)\rangle=\rho_i\sum_j{\big(\frac{A_j}{\rho_j^2}+\frac{A_i}{\rho_i^2}\big)\otimes\nabla W_{ij}m_j}$ \\ [2ex]
+$sph\_G10$ &  & $\langle grad(A_i)\rangle=\sum_j{(A_j-A_i)\otimes\nabla W_{ij}\frac{m_j}{\rho_j}}$ \\ [2ex]
+$sph\_G11$ &  & $\langle grad(A_i)\rangle=\rho_i\sum_j{\big(\frac{A_j}{\rho_j^2}-\frac{A_i}{\rho_i^2}\big)\otimes\nabla W_{ij}m_j}$ \\ [2ex]
+$sph\_D$ &  & $\langle div(A_i)\rangle=\sum_j{A_j\nabla W_{ij}\frac{m_j}{\rho_j}}$ \\ [2ex]
+$sph\_D00$ &  & $\langle div(A_i)\rangle=\sum_j{(A_j+A_i)\nabla W_{ij}\frac{m_j}{\rho_j}}$ \\ [2ex]
+$sph\_D01$ &  & $\langle div(A_i)\rangle=\rho_i\sum_j{\big(\frac{A_j}{\rho_j^2}+\frac{A_i}{\rho_i^2}\big)\nabla W_{ij}m_j}$ \\ [2ex]
+$sph\_D10$ &  & $\langle div(A_i)\rangle=\sum_j{(A_j-A_i)\nabla W_{ij}\frac{m_j}{\rho_j}}$ \\ [2ex]
+$sph\_D11$ &  & $\langle div(A_i)\rangle=\rho_i\sum_j{\big(\frac{A_j}{\rho_j^2}-\frac{A_i}{\rho_i^2}\big)\nabla W_{ij}m_j}$ \\ [2ex]
+$sph\_L0$ &  & $\langle\Delta A_i\rangle=\sum_{j}{2(A(r_i)-A(r_j))\frac{r_j-r_i}{\vert r_j-r_i \vert^2}\nabla W_{ij}\frac{m_j}{\rho_j}}$ \\ [2ex]
+$sph\_L1$ & $B$, $A$, $m$, $\rho$, $W$, $R_{infl}$ & $\langle \nabla (B_i \nabla A_i)\rangle=\sum_{j}{2(B_j-B_i)(A_j-A_i)\frac{r_j-r_i}{\vert r_j-r_i \vert^2}\nabla W_{ij}\frac{m_j}{\rho_j}}$ \\ [2ex]
+\bottomrule[1.25pt]
+\end{tabular}
+\end{center}
+\end{table}
+The gradient, divergence and Laplacian operators are denoted by $G$, $D$ and $L$ respectively, $R_{infl}$ is the influence radius and $\otimes$ refers the outer product. Although divergence and gradient operators are distinguished by the product type, they give the same result in certain cases, for instance in one dimension or if $A$ is scalar.
+
+\mysubparagraph{DEM operators}
+As it is shown in Section \ref{sec:DEM_intro} the particle motion is governed by two separate ordinary differential equations, consequantly the linear and angular motion have to be treated separately. The two individual DEM operators are described in Table \ref{tbl:DEM_ops} including the same notations as in Section \ref{sec:DEM_intro}.
+\begin{table} [hbt!]
+\begin{center}
+\caption{Operators of the Discrete Element Method.} \label{tbl:DEM_ops}
+\begin{tabular}{ l c l }
+\toprule[1.5pt]
+\bf Name & \bf Operands & \bf Description \\ 
+\midrule
+$dem\_l$ & \multirow{2}{*}{$v, \omega, R, m, E, \nu, \phi$} & $F_i=\sum_{j}{\left(F^n_{ij}+F^t_{ij}\right)}$ \\ 
+$dem\_a$ &  & $T_i=\sum_{j}{T_{ij}}$ \\ 
+\bottomrule[1.25pt]
+\end{tabular}
+\end{center}
+\end{table}
+Except for the Coulomb-friction coefficient $\phi$, all the operands of both linear and angular operators are allowed to be field quantities.
+
+
+
+\mysubparagraph{DVM operator}
+The implementation of the DVM scheme is covered by a single operator introduced in \ref{tbl:DVM_ops}. 
+\begin{table} [hbt!]
+\begin{center}
+\caption{Operator of the Discrete Vortex Method.} \label{tbl:DVM_ops}
+\begin{tabular}{ l c l }
+\toprule[1.5pt]
+\bf Name & \bf Operands & \bf Description \\ 
+\midrule
+$dvm$ & $\omega, \epsilon$ & $v(r)=\sum_i\frac{\omega_i\times (r-r_i)}{2\pi |r-r_i|^2}(1-e^{-r^2/\epsilon^2})$ \\
+\bottomrule[1.25pt]
+\end{tabular}
+\end{center}
+\end{table}
+Although in theory the interactions of the DVM operator have infinite influence radii, the implementation suffers from a cutoff distance error caused by the finite cell sizes of the domain. However in such a case, both periodic and symmetric boundary conditions can be employed properly.
+
+
+
+
 
 \section{Using Nauticle}
 \subsection{Simulation workflow} \label{sec:sim_workflow}
@@ -820,14 +968,15 @@ Nauticle requires a few dependencies and requirements to be installed. These are
 \begin{itemize}
   \item cmake (at least version 3.5) (\myhref{https://cmake.org/download/}{https://cmake.org/download/}),
   \item Visualization Toolkit 7.0.0 (\myhref{http://www.vtk.org/files/release/7.0/VTK-7.0.0.zip}{http://www.vtk.org/files/release/7.0/VTK-7.0.0.zip}),
-  \item Common utilities (\href{https://bitbucket.org/BalazsToth/commonutils}{https://bitbucket.org/BalazsToth/commonutils}),
+  \item Common utilities (\myhref{https://bitbucket.org/BalazsToth/commonutils}{https://bitbucket.org/BalazsToth/commonutils}),
   \item ProLog (\myhref{https://bitbucket.org/BalazsToth/prolog}{https://bitbucket.org/BalazsToth/prolog}),
   \item HandyXML (\myhref{https://bitbucket.org/BalazsToth/handyxml}{https://bitbucket.org/BalazsToth/handyxml}).
 \end{itemize}
 The details of the required dependencies are not discussed here, please follow the links to find more information about the listed packages. Further dependencies could be required by the Visualization Toolkit.
 
 During the installation process it is assumed that the user has internet connection and root privileges in the operating system (super user). Throughout the following subsection the automatic installation procedure is discussed in detail.
-Note: to avoid any version conflicts it could be preferable to install and build Nauticle with its dependencies using HashDist, which is an environment management system (\myhref{https://github.com/hashdist/hashdist}{https://github.com/hashdist/ hashdist}). However it is not mandatory and the automated installation process does not apply HashDist.
+Note: to avoid any version conflicts it could be preferable to install and build Nauticle with its dependencies using HashDist, which is an environment management system (\myhref{https://github.com/hashdist/hashdist}{https://github.com/hashdist/ hashdist}). However it is not mandatory and the automated installation process does not apply HashDist. \\
+Except for the VTK library, all header and binary files related to the dependencies are required to be copied into the /usr/local/include/<dependency> and /usr/local/lib/<dependency> directories in case of both Linux and Mac systems. VTK libary should be places into the directory /usr/local/VTK.7.0.0 and built simply by following the instructions of the VTK Documentation. Obviously, to compile and build Nauticle, all its dependencies are required to be completely installed in the proper directories. 
 \subsection{Automated installation}
 Although it is possible to install and build the dependencies and Nauticle manually, it is recommended to use the installation shell script arriving with Nauticle. The script installs the whole package including the dependencies by typing the command
 \begin{lstlisting}[language=bash]
@@ -841,11 +990,11 @@ in terminal after changing directory to the desired folder. The content of the s
 #!/bin/sh
 
 # Versions of nauticle and its dependencies
-NAUTICLE_version="1.0.170221"
+NAUTICLE_version="1.0.170720"
 VTK_version="7.0.0"
-CU_VERSION="1.0.170221"
-PL_version="1.0.170221"
-HX_version="1.0.170502"
+CU_VERSION="1.0.170720"
+PL_version="1.0.170720"
+HX_version="1.0.170720"
 
 # Set current directory to install directory.
 INSTALL_DIR=$PWD
@@ -878,25 +1027,29 @@ cd $INSTALL_DIR
 
 # Download and unzip the required packages
 # Common utils
-wget https://bitbucket.org/nauticleproject/commonutils/downloads/commonutils-$CU_VERSION.zip
-sudo unzip commonutils-$CU_VERSION.zip
+PCKG_CU=commonutils_$CU_VERSION.zip
+wget https://bitbucket.org/BalazsToth/commonutils/downloads/$PCKG_CU
+sudo unzip $PCKG_CU
 sudo chmod -R 777 commonutils
-rm commonutils-$CU_VERSION.zip
+rm $PCKG_CU
 # Prolog
-wget https://bitbucket.org/nauticleproject/prolog/downloads/prolog-$PL_version.zip
-sudo unzip prolog-$PL_version.zip
+PCKG_PL=prolog_$PL_version.zip
+wget https://bitbucket.org/BalazsToth/prolog/downloads/$PCKG_PL
+sudo unzip $PCKG_PL
 sudo chmod -R 777 prolog
-rm prolog-$PL_version.zip
+rm $PCKG_PL
 # HandyXML
-wget https://bitbucket.org/nauticleproject/handyxml/downloads/handyxml-$HX_version.zip
-sudo unzip handyxml-$HX_version.zip
+PCKG_HX=handyxml_$HX_version.zip
+wget https://bitbucket.org/BalazsToth/handyxml/downloads/handyxml_$HX_version.zip
+sudo unzip $PCKG_HX
 sudo chmod -R 777 handyxml
-rm handyxml-$HX_version.zip
+rm $PCKG_HX
 # nauticle
-wget https://bitbucket.org/nauticleproject/nauticle/downloads/nauticle-$NAUTICLE_version.zip
-sudo unzip nauticle-$NAUTICLE_version.zip
+PCKG_NA=nauticle_$NAUTICLE_version.zip
+wget https://bitbucket.org/nauticleproject/nauticle/downloads/$PCKG_NA
+sudo unzip $PCKG_NA
 sudo chmod -R 777 nauticle
-rm nauticle-$NAUTICLE_version.zip
+rm $PCKG_NA
 
 # Install the dependencies and the nauticle executable (nauticle) itself
 cd commonutils
@@ -926,7 +1079,7 @@ sudo mkdir $BIN_DIR
 sudo make
 cd ..
 
-# Add BIN_DIR to the environmental PATH variable
+# Add BIN_DIR to the environment PATH variable
 if [ "$OS" = "Mac" ]; then
   sudo printf "\nexport PATH=\${PATH}:$BIN_DIR\n" >> ~/.bash_profile
     alias brc='source ~/.bash_profile'
@@ -960,7 +1113,16 @@ where the arguments\_list consists of the option listed in Table \ref{tbl:runtim
 \section{Nauticle interface} \label{sec:interface}
 
 
+
+
+
+
+
+
 \section{Examples} \label{sec:examples}
+This section describes a few examples of the application of the Nauticle solver to more or less simple physical models governed by partial and ordinary differential equations. The examples are selected to cover a wide range of applications from both physical and mathematical point of view.
+
+Note that the solutions presented in this section might have further different, but also correct realisations.
 \subsection{Couette-flow}
 \subsubsection{Problem definition}
 One of the simplest and most frequently investigated fundamental test case in fluid mechanics is the laminar Couette-flow. The upper one of the two infinite sized parallel walls shown in Figure \ref{fig:couette} is moving in $y$ direction with velocity $v=1$m/s.
@@ -1444,7 +1606,7 @@ The simulation is executed using the configuration file below:
 \end{samepage}
 
 \subsection{Simulation of the Solar System}
-The simulation of the Solar System is a typical case of the n-body problem. The size of the objects are negligible and all objects are in interaction with all the others, consequently, the equation of motion \equref{nbody_eom} stands for all objects.
+The simulation of the Solar System is a typical case of the n-body problem. The size of the objects are negligible and all objects are in interaction with all the others, consequently, the equation of motion \equref{eq:nbody_eom} stands for all objects.
 Due to the space-time scale of the Solar System it is recommended to deviate from SI units to decrease the inaccuracy of floating point arithmetics. Here the unit mass is equal to the mass of Earth (am), the unit distance is considered as the average distance of the Sun and the Earth (al) and finally, the unit length of time is one Earth-day (at). These units are summarised in Table \ref{tbl:astronomical_units}.
 \begin{table} [htb!]
 \begin{center}
@@ -1679,7 +1841,7 @@ Running the simulation of the collapse of the fluid column takes a while. Nevert
 
 \subsection{Stefan-problem}
 \subsubsection{Problem definition}
-Consider an $L=1$ m long one-dimensional solid beam of temperature $T_0=-0.2$ C$^\circ$ with the melting temperature $T_m=0$ C$^\circ$. The ice is melted by the heat flux induced on one end by the constant temperature $T_w=0.1$ C$^\circ$. All the other sides of the beam are completely isolated from the environment. Figure \ref{fig:stefan_problem_beam} illustrates the phenomenon of the Stefan-problem.
+Consider an $L=1$ m long one-dimensional solid beam of temperature $T_0=-0.2$ $^\circ$C with the melting temperature $T_m=0$ $^\circ$C. The ice is melted by the heat flux induced on one end by the constant temperature $T_w=0.1$ $^\circ$C. All the other sides of the beam are completely isolated from the environment. Figure \ref{fig:stefan_problem_beam} illustrates the phenomenon of the Stefan-problem.
 \begin{figure}[htb!]
   \includegraphics[scale=0.4]{stefan_problem_beam.pdf}
   \centering
@@ -1691,7 +1853,7 @@ The schematic layout of thThe temperatue distribution along the beam and the mar
 &\frac{\partial T}{\partial t}=a\frac{\partial^2 T}{\partial x^2}, \\
 &\frac{\partial S}{\partial t}=-\frac{\partial T}{\partial x}\bigg\vert_{S(t),t}.
 \end{flalign} \label{eq:stefan_problem_heat}
-Equation \equref{eq:stefan_problem_heat} is the one-dimensional heat equation now discribes the temperature diffusion in both the liquid and solid phases. The constant $a$ is the heat conduction coefficient with different values per each phase: $a_l=0.002$ m$^2/$s and $a_s=0.005$ m$^2/$s. The motion of the position $S(t)$ of the liquid-solid interface is proportional to the slope of the temperature, hence the heat flux at $S(t)$. By definition, the interface temperature is identical with the melting temperature, requiring the Dirichlet-condition to move together with the interface along the beam. Thus, the boundary conditions obtain the form of
+Equation \equref{eq:stefan_problem_heat} is the one-dimensional heat equation now describes the temperature diffusion in both the liquid and solid phases. The constant $a$ is the heat conduction coefficient with different values per each phase: $a_l=0.002$ m$^2/$s and $a_s=0.005$ m$^2/$s. The motion of the position $S(t)$ of the liquid-solid interface is proportional to the slope of the temperature, hence the heat flux at $S(t)$. By definition, the interface temperature is identical with the melting temperature, requiring the Dirichlet-condition to move together with the interface along the beam. Thus, the boundary conditions obtain the form of
 \begin{flalign} \label{eq:stefan_problem_bc}
 \begin{split}
 & T(0,t)=0.1, \\
