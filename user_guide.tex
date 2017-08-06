@@ -2270,169 +2270,188 @@ The complete evacuation occured in slightly more than $40$ seconds.
 \section{The Nauticle open-source code}
 This section comments the role of each source and header file of Nauticle. For better clarity the explanation is divided into different groups marked by the subsequent sections.
 \subsection{Nodes of the expression tree}
-\subsubsection{Particlewise nodes}
+
 \textbf{pmExpression.h / pmExpression.cpp} \\
-Declares / defines the expression node of the expression tree. This is an abstract class. \\
+Declares / defines the main node in the expression tree (abstract class).
 
 \textbf{pmSymbol.h / pmSymbol.cpp} \\
-Declares / defines the symbol node of the expression tree. This is an abstract class. \\
+Declares / defines the symbol node in the expression tree (abstract class).
 
 \textbf{pmSingle.h / pmSingle.cpp} \\
-Declares / defines the single node of the expression tree. This is an abstract class. \\
+Declares / defines the single node in the expression tree (abstract class).
 
 \textbf{pmConstant.h / pmConstant.cpp} \\
-Declares / defines the node for constants in the expression tree. \\
+Declares / defines the constant node in the expression tree.
 
 \textbf{pmVariable.h / pmVariable.cpp} \\
-Declares / defines the node for variables in the expression tree. \\
+Declares / defines the variable node in the expression tree.
 
 \textbf{pmField.h / pmField.cpp} \\
-Declares / defines the field node of the expression tree. \\
+Declares / defines the field node in the expression tree.
 
 \textbf{pmParticle\_system.h / pmParticle\_system.cpp} \\
-Declares / defines the particle system node of the expression tree. It performs neighbor searching. \\
-
-\textbf{pmArithmetic\_function.h} \\
-Declares / defines the node for arithmetic functions in the expression tree. \\
-
-\textbf{pmArithmetic\_operator.h} \\
-Declares / defines the node for arithmetic operators in the expression tree. \\
-
-
-\subsubsection{Nodes for interaction branch}
-\textbf{pmInteraction.h} \\
-Declares / defines the interaction node in the expression tree. This is an abstract class. It manages the interparticle connections. \\
-
-\textbf{pmFsearch.h / pmFsearch.cpp} \\
-Declares / defines the class for field search algorithms. This is an abstract class. \\
-
-\textbf{pmFmin.h / pmFmin.cpp} \\
-Declares / defines the functions for minimum search of a field.  \\
-
-\textbf{pmFmax.h / pmFmax.cpp} \\
-Declares / defines the functions for maximum search of a field. \\
-
-\textbf{pmFmean.h / pmFmean.cpp} \\
-Declares / defines the functions for mean calculation of a field. \\
-
-\textbf{pmFsum.h / pmFsum.cpp} \\
-Declares / defines the functions for sum calculation of a field. \\
-
-\textbf{pmNbody\_operator.h / pmNbody\_operator.cpp} \\
-Declares / defines the functions for particle interactions. It calculates the gravitational forces. \\
-
-\textbf{pmNeighbors.h / pmNeighbors.cpp} \\
-Declares / defines the functions for particle interactions. It calculates the number of neighbors in a given distance. \\
-
-\textbf{pmDem\_operator.h} \\
-Declares / defines the node in the expression tree to calculate interactions based on Discrete Element Method (DEM). \\
+Declares / defines the particle system node in the expression tree.
 
 \textbf{pmOperator.h} \\
-Declares / defines the operator node in the expression tree. This is an abstract class. \\
+Declares / defines the operator node in the expression tree (abstract class).
+
+\textbf{pmArithmetic\_function.h} \\
+Declares / defines the class of arithmetic functions in the expression tree.
+
+\textbf{pmArithmetic\_operator.h} \\
+Declares / defines the class of arithmetic operators in the expression tree.
+
+
+\subsubsection{Nodes of the interaction branch}
+
+\textbf{pmInteraction.h} \\
+Declares / defines the interaction node in the expression tree (abstract class).
+
+\textbf{pmNeighbors.h / pmNeighbors.cpp} \\
+Declares / defines the neighbor interaction node in the expression tree.
+
+\textbf{pmNbody\_operator.h / pmNbody\_operator.cpp} \\
+Declares / defines the gravitational interaction in the expression tree.
+
+\textbf{pmDem\_operator.h} \\
+Declares / defines the Discrete Element Method interaction in the expression tree.
 
 \textbf{pmFilter.h} \\
-Declares / defines the Filter node in the expression tree. This is an abstract class. \\
-
-\textbf{pmSph\_operator.h} \\
-Declares / defines functions for SPH interactions and differential operators. \\
+Declares / defines the filter node in the expression (tree abstract class).
 
 \textbf{pmDvm\_operator.h / pmDvm\_operator.cpp} \\
-Declares / defines functions for DVM interaction. \\
+Declares / defines the Discrete Vortex Method interaction in the expression tree.
+
+\textbf{pmSph\_operator.h} \\
+Declares / defines the Smoothed Particle Hydrodanmics interaction in the expression tree.
 
 \textbf{pmSfm\_operator.h / pmSfm\_operator.cpp} \\
-Declares / defines functions for SFM interaction. \\
+Declares / defines the Social Force Model interaction in the expression tree.
 
-\subsection{Files for simulation case}
+\textbf{pmFmax.h / pmFmax.cpp} \\
+Declares / defines the class that calculates the maximum of the given field.
 
-\textbf{pmCommand\_parser.h / pmCommand\_parser.cpp} \\
-Declares / defines the functions that manage terminal commands. \\
+\textbf{pmFmean.h / pmFmean.cpp} \\
+Declares / defines the class that calculates the mean of the given field.
 
-\textbf{pmTensor.h / pmTensor.cpp} \\
-Declares / defines the class that implements functions for tensor quantities. \\
+\textbf{pmFmin.h / pmFmin.cpp} \\
+Declares / defines the class that calculates the minimum of the given field.
 
-\textbf{pmTensor\_parser.h / pmTensor\_parser.cpp} \\
-Declares / defines the functions that analyse tensors based on expressions. \\
+\textbf{pmFsearch.h / pmFsearch.cpp} \\
+Declares / defines the class from which the minimum, maximum, mean, and sum interactions are inherited (abstract class).
 
-\textbf{pmParameter\_space.h / pmParameter\_space.cpp} \\
-Declares / defines the functions for parameter management. \\
+\textbf{pmFsum.h / pmFsum.cpp} \\
+Declares / defines the class that calculates the sum of the given field.
 
-\textbf{pmCase\_manager.h / pmCase\_manager.cpp} \\
-Declares / defines the functions that read the configuration file, build and run the simulation through the solver. \\
 
-\textbf{pmDomain.h / pmDomain.cpp} \\
-Declares / defines the rectangular simulation domain class in which the particles exist. \\
-
-\textbf{pmMath\_parser.h / pmMath\_parser.cpp} \\
-Declares / defines the functions for string parsing. \\
-
-\textbf{pmMath\_test.h / pmMath\_test.cpp} \\
-Declares / defines the class that performs mathematical expressions stored in string format. This is an abstract class. \\
-
-\textbf{pmExpression\_parser.h / pmExpression\_parser.cpp} \\
-Declares / defines the functions for expression parsing. \\
-
-\textbf{pmEquation\_parser.h / pmEquation\_parser.cpp} \\
-Declares / defines the class that analyses user defined equations of the configuration file. \\
-
-\textbf{pmEquation.h / pmEquation.cpp} \\
-Declares / defines the class for user defined equations. It contains two expressions (LHS and RHS). It performs the evaluation too. \\
-
-\textbf{pmWorkspace.h / pmWorkspace.cpp} \\
-Declares / defines the class that manages user defined variables, constants, fields, and particle system. \\
-
-\textbf{pmCase.h / pmCase.cpp} \\
-Declares / defines the class that manages the workspace and user defined equations (UDE's). It also solves the equations. \\
-
-\textbf{pmGrid.h / pmGrid.cpp} \\
-Declares / defines the class for particle generation. Two ways: rectangular grid or particles from .xyz file. \\
-
-\textbf{pmGrid\_space.h / pmGrid\_space.cpp} \\
-Declares / defines the class that manages, merges grids. \\
+\subsubsection{Input/Output files}
 
 \textbf{pmVTK\_manager.h / pmVTK\_manager.cpp} \\
-Declares / defines the functions for VTK reading and writing. This is an abstract class. \\
+Declares / defines the parent class of VTK read and write classes (abstract class).
 
 \textbf{pmVTK\_reader.h / pmVTK\_reader.cpp} \\
-Declares / defines the functions for VTK reading. \\
+Declares / definesthe class for reading initial conditions from VTK files.
 
 \textbf{pmVTK\_writer.h / pmVTK\_writer.cpp} \\
-Declares / defines the functions for VTK writing. \\
+Declares / defines class for writing results to VTK files.
 
 \textbf{pmXML\_processor.h / pmXML\_processor.cpp} \\
-Declares / defines the functions for extracting data from xml file. \\
-
-\subsection{Further files}
-\textbf{nauticle\_constants.h} \\
-Defines constants used by the Nauticle source and header files. \\
-
-\textbf{pmRandom.h / pmRandom.cpp} \\
-Declares / defines the functions for random number generation in a range. \\
+Declares / defines the class that reads the configuration file and generates the simulation case based on it.
 
 \textbf{pmLog\_stream.h / pmLog\_stream.cpp} \\
-Declares / defines the class that manages logging into file and terminal. \\
+Declares / defines the class for wrinting functions.
 
-\textbf{pmSort.h}\\
-Implements functions for sorting and reordering.\\
+
+\subsubsection{Files of simulation case}
+
+\textbf{pmCase.h / pmCase.cpp} \\
+Declares / defines the case class repsesenting  simulation case.
+
+\textbf{pmCase\_manager.h / pmCase\_manager.cpp} \\
+Declares / defines the class for simulation management like solution of equations and writing results.
+
+\textbf{pmCommand\_parser.h / pmCommand\_parser.cpp} \\
+Declares / defines the class to parse runtime commands.
+
+\textbf{pmDomain.h / pmDomain.cpp} \\
+Declares / defines the class holding information about the simulation domain and its boundaries.
+
+\textbf{pmEquation.h / pmEquation.cpp} \\
+Declares / defines the class that holds a single user defined equation.
+
+\textbf{pmEquation\_parser.h / pmEquation\_parser.cpp} \\
+Declares / defines the class of user defined equation parsing.
+
+\textbf{pmExpression\_parser.h / pmExpression\_parser.cpp} \\
+Declares / defines the class to parse user defined expressions.
+
+\textbf{pmGrid.h / pmGrid.cpp} \\
+Declares / defines the class that generates one-, two- or three-dimensional grids.
+
+\textbf{pmGrid\_space.h / pmGrid\_space.cpp} \\
+Declares / defines that stores the grids defined during the simulation.
 
 \textbf{pmKernel.h / pmKernel.cpp} \\
-Declares / defines the functions for SPH kernels.\\
+Declares / defines the class of kernel functions.
 
-\textbf{nauticle.h}\\
-Wraps includes.\\
+\textbf{pmMath\_parser.h / pmMath\_parser.cpp} \\
+Declares / defines the class with math parsing methods (abstract class).
 
-\textbf{pmNoncopyable.h}\\
-Implements a class for objects that are not allowed to be copied.\\
+\textbf{pmMath\_test.h / pmMath\_test.cpp} \\
+Declares / defines the class that checks if a name in the user defined equation is a function name.
 
-\textbf{pmVersion.h}\\
-Contains Nauticle major and minor version information.\\
+\textbf{pmNoncopyable.h} \\
+Declares / defines the class that prevents to copy any of the object of its derived classes (abstract class).
+
+\textbf{pmParameter\_space.h / pmParameter\_space.cpp} \\
+Declares / defines the class that stores the parameters of the simulation.
+
+\textbf{pmRandom.h / pmRandom.cpp} \\
+Declares / defines the functions of random number generation.
+
+\textbf{pmSort.h} \\
+Declares / defines the function to sord data.
+
+\textbf{pmTensor.h / pmTensor.cpp} \\
+Declares / defines the fundamental quantity tensor in the expression tree.
+
+\textbf{pmTensor\_parser.h / pmTensor\_parser.cpp} \\
+Declares / defines the class that performs the parsing of user defined expressions.
+
+\textbf{pmWorkspace.h / pmWorkspace.cpp} \\
+Declares / defines the class for workspace that keeps the simulation data defined by the user.
+
+
+\subsubsection{Further files}
+
+\textbf{main.cpp} \\
+Contains the main function, handles runtime commands.
+
+\textbf{Color\_define.h} \\
+Defines default color for writing to terminal.
+
+\textbf{Color\_undefine.h} \\
+Undefines default color for writing to terminal.
+
+\textbf{nauticle.h} \\
+Collects necessary includes.
+
+\textbf{nauticle\_constants.h} \\
+Collection of required constants.
+
+\textbf{pmVersion.h} \\
+Defines the major and minor version numbers of Nauticle.
+
 
 \section{Nauticle future}
 The development of Nauticle is started around the late 2015. Initially the code was built up using former particle-based algorithms written by the author. After the implementation of the solver core following the basic ideas aiming generality, the software became a useful simulation tool in several research areas. However, being a small and young project, further developments are required to extend the capabilities of the solver.
-The most harmful consequence of the generality (at least from the point of view of the user-defined equations) is the high-level interpretation of mathematical operations at runtime, resulting in high computational requirement.
 
--precompile
--implicit
--particle spawn
+The following features are planned to be developed in the next versions of Nauticle:
+\begin{enumerate}
+\item Generation and runtime compilation of user defined equations to increase computational efficiency.
+\item Extend the environment for implicit meshless schemes.
+\item Implementation of particle sources and sinks.
+\end{enumerate}
 
 \section{References}
 
