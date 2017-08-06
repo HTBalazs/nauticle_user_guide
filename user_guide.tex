@@ -527,7 +527,13 @@ which is followed by the evaluation of $f(\phi^{n+1/2},t^{n+1/2})$. The second s
 \begin{flalign}
 \phi^{n+1}=\phi^n+\Delta t f(\phi^{n+1/2},t^{n+1/2}).
 \end{flalign}
-
+\subsubsection{Velocity-Verlet method}
+A common choice for integration of second order equation of motion is the velocity-Verlet method. The algorithm reads as:
+\begin{flalign}
+&x^{n+1}=x^n+v^n\Delta t+\frac{a^n}{2}\Delta t^2, \\
+&v^{n+1}=v^n+\frac{a^n+a^{n+1}}{2}\Delta t.
+\end{flalign}
+As it is visible, it is assumed that the acceleration $a^{n+1}$ does not depend on $v^{n+1}$.
 
 \section{Implementation}
 \subsection{The Nauticle environment} \label{sec:environment}
@@ -711,6 +717,8 @@ Since numerical integrators form a special group of the arithmetic functions, th
 Explicit Euler & $euler$ & \multirow{3}{*}{$A$, $\dot A$, $\Delta t$}   \\
 RK2 predictor & $predictor$ & \\
 RK2 corrector & $corrector$ &  \\
+Verlet position & $verlet\_r$ & $r$, $\dot r$, $\ddot r$, $\Delta t$ \\
+Verlet velocity & $verlet\_v$ & $\dot r$, $\ddot r$, $\Delta t$ \\
 \bottomrule[1.25pt]
 \end{tabular}
 \end{center}
@@ -776,7 +784,7 @@ Meshless interpolants often require not the kernel function itself but its deriv
 \end{figure}
 
 \mysubparagraph{N-body operator}
-The simplest implemented scheme in Nauticle, namely the graviational N-body problem is simply considered as a single interaction operator identical to the RHS of \equref{eq:nbody_eom}. It is described in Table \ref{tbl:nbody_op}.
+The simplest implemented scheme in Nauticle, namely the gravitational N-body problem is simply considered as a single interaction operator identical to the RHS of \equref{eq:nbody_eom}. It is described in Table \ref{tbl:nbody_op}.
 \begin{table} [hbt!]
 \begin{center}
 \caption{N-body problem operator.}\label{tbl:nbody_op}
@@ -1411,7 +1419,7 @@ After the discretization the XML-document can be constructed:
 </simulation>
 \end{lstlisting}
 \end{example}
-Since the initial conditions of both the temperature and velocity are uniform, the solution of the discretized equations needs to be repeated until the result is sufficiently formed. In this case the simulated time is $100$s. The final result is compared with the analytical solution in Figure \ref{fig:couette_results}.
+Since the initial conditions of both the temperature and velocity are uniform, the solution of the discretized equations needs to be repeated until the result is sufficiently formed. In this case the simulated time is $100$ s. The final result is compared with the analytical solution in Figure \ref{fig:couette_results}.
 \begin{figure}[H]
   \includegraphics[scale=0.4]{couette_result.pdf}
   \centering
@@ -2126,8 +2134,8 @@ Finally, the propagation of the liquid-solid interface is displayed as a functio
 \end{figure}\vspace*{3pt}
 
 
-\section{Building evacuation} \label{sec:SFM_example}
-\subsection{Problem definition}
+\subsection{Building evacuation} \label{sec:SFM_example}
+\subsubsection{Problem definition}
 Given a simplified single story building with 7 rooms opening into the same corridor. Both exits occupy the same side of the building and opened from the foreground. The sketch of the building is shown by Figure \ref{fig:building_sketch}.
 \begin{figure}[H]
   \includegraphics[scale=0.5]{building_sketch.pdf}
@@ -2136,7 +2144,7 @@ Given a simplified single story building with 7 rooms opening into the same corr
   \label{fig:building_sketch}
 \end{figure}\vspace*{3pt}
 It is assumed that 120 initially randomly distributed people tends to leave the building in the shortest possible direction.
-\subsection{Numerical model and results}
+\subsubsection{Numerical model and results}
 Again, the governing equation of the standard SFM:
 \begin{flalign}
 &\frac{d\textbf{v}_i}{dt}=\frac{v_0\textbf{e}_0-\textbf{v}_i}{\tau}-\frac{1}{m_i}\sum_{j\neq i}{\bigg[A_i exp\bigg(\frac{R_{ij}-d_{ij}}{B_i}\bigg)+k(R_{ij}-d_{ij})-c_{ij}\bigg]\textbf{n}_{ji}},
@@ -2310,13 +2318,13 @@ Declares / defines the functions for mean calculation of a field. \\
 \textbf{pmFsum.h / pmFsum.cpp} \\
 Declares / defines the functions for sum calculation of a field. \\
 
-\textbf{pmNbody.h / pmNbody.cpp} \\
+\textbf{pmNbody\_operator.h / pmNbody\_operator.cpp} \\
 Declares / defines the functions for particle interactions. It calculates the gravitational forces. \\
 
 \textbf{pmNeighbors.h / pmNeighbors.cpp} \\
 Declares / defines the functions for particle interactions. It calculates the number of neighbors in a given distance. \\
 
-\textbf{pmDem.h} \\
+\textbf{pmDem\_operator.h} \\
 Declares / defines the node in the expression tree to calculate interactions based on Discrete Element Method (DEM). \\
 
 \textbf{pmOperator.h} \\
@@ -2330,6 +2338,9 @@ Declares / defines functions for SPH interactions and differential operators. \\
 
 \textbf{pmDvm\_operator.h / pmDvm\_operator.cpp} \\
 Declares / defines functions for DVM interaction. \\
+
+\textbf{pmSfm\_operator.h / pmSfm\_operator.cpp} \\
+Declares / defines functions for SFM interaction. \\
 
 \subsection{Files for simulation case}
 
@@ -2406,7 +2417,7 @@ Implements functions for sorting and reordering.\\
 \textbf{pmKernel.h / pmKernel.cpp} \\
 Declares / defines the functions for SPH kernels.\\
 
-\textbf{pm.h}\\
+\textbf{nauticle.h}\\
 Wraps includes.\\
 
 \textbf{pmNoncopyable.h}\\
@@ -2416,7 +2427,13 @@ Implements a class for objects that are not allowed to be copied.\\
 Contains Nauticle major and minor version information.\\
 
 \section{Nauticle future}
-As a new and small project, Nauticle requires 
+The development of Nauticle is started around the late 2015. Initially the code was built up using former particle-based algorithms written by the author. After the implementation of the solver core following the basic ideas aiming generality, the software became a useful simulation tool in several research areas. However, being a small and young project, further developments are required to extend the capabilities of the solver.
+The most harmful consequence of the generality (at least from the point of view of the user-defined equations) is the high-level interpretation of mathematical operations at runtime, resulting in high computational requirement.
+
+-precompile
+-implicit
+-particle spawn
+
 \section{References}
 
 \section{Licenses}
