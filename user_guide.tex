@@ -636,7 +636,7 @@ Note that in case of certain quantities like angular velocity, or vorticity the 
 
 
 \subsection{Expression tree}
-The generality of the numerical solver requires the analysis of user-defined expressions and equations (see Section \ref{UDE}). In Nauticle the expression parsing is based on the expression tree shown in Figure \ref{fig:expression_tree}.
+The generality of the numerical solver requires the analysis of user-defined expressions and equations. In Nauticle the expression parsing is based on the expression tree shown in Figure \ref{fig:expression_tree}.
 \begin{figure}[H]
   \includegraphics[scale=0.5]{expression_tree.pdf}
   \centering
@@ -792,7 +792,7 @@ W^{Gaussian}(q)=\alpha_D\exp\bigg(-\frac{q^2}{4}\bigg)
 \end{flalign}
 The normalisation coefficients are $\alpha_1=1/(\sigma\sqrt{2\pi})$, $\alpha_2=1/(2\pi \sigma^2)$ and $\alpha_3=1/(2\pi \sigma^2)^{3/2}$. The influence radius of the Gaussian kernel is infinite.
 
-Meshless interpolants often require not the kernel function itself but its derivative, therefore the first order derivative of the presented kernels are also included. To apply any of the filter kernels in Nauticle, a simple identifier explained in Figure \ref{fig:kernel_explanation.pdf} is associated to them.
+Meshless interpolants often require not the kernel function itself but its derivative, therefore the first order derivative of the presented kernels are also included. To apply any of the filter kernels in Nauticle, a simple identifier explained in Figure \ref{fig:kernel_explanation} is associated to them.
 \begin{figure}[H]
   \includegraphics[scale=0.3]{kernel_explanation.pdf}
   \centering
@@ -1923,6 +1923,15 @@ The simulation can be run using the configuration file below:
 \end{example}
 \end{samepage}
 Instead of the definition of the particle positions in the configuration file it reads the data and the equations from the VTK file \textbf{solar\_system.vtk}. However, the parameters like the printing interval or the total simulation time is still need to be defined in the configuration file.
+Theoretically, the total amount of energy in the Solar system remains constant, at least in the simulated 1000 years interval. The sum of the kinetic and potential energy of all planets is plotted in Figure \ref{fig:solar_system_energy}.
+\begin{figure}[H]
+  \includegraphics[scale=0.5]{solar_system_energy.pdf}
+  \centering
+  \caption{Sum of kinetic and potential energy of the Solar system. }
+  \label{fig:solar_system_energy}
+\end{figure}\vspace*{3pt}
+Apart from the fluctuation, the total energy is preserved using the Velocity-Verlet integrator.
+
 
 \subsection{Dam-break problem}
 \subsubsection{Problem definition}
@@ -2067,7 +2076,7 @@ Kinematic viscosity & $\nu$ & $0.005$ m \\
 \end{tabular}
 \end{center}
 \end{table}
-Running the simulation of the collapse of the fluid column takes a while. Nevertheless, a few snapshots of the free surface shape is shown in Figure \ref{fig:dam_break_result}. 
+Running the simulation of the collapse of the fluid column takes a while. Nevertheless, a few snapshots of the free surface shape is shown in Figure \ref{fig:dam_break_results}. 
 \begin{figure}[H]
   \includegraphics[scale=0.5]{dam_break_result.pdf}
   \centering
@@ -2089,7 +2098,7 @@ The schematic layout of thThe temperatue distribution along the beam and the mar
 \begin{flalign} \label{eq:stefan_problem_heat}
 &\frac{\partial T}{\partial t}=a\frac{\partial^2 T}{\partial x^2}, \\
 &\frac{\partial S}{\partial t}=-\frac{\partial T}{\partial x}\bigg\vert_{S(t),t}.
-\end{flalign} \label{eq:stefan_problem_heat}
+\end{flalign} \label{eq:stefan_problem_interface}
 Equation \equref{eq:stefan_problem_heat} is the one-dimensional heat equation now describes the temperature diffusion in both the liquid and solid phases. The constant $a$ is the heat conduction coefficient with different values per each phase: $a_l=0.002$ m$^2/$s and $a_s=0.005$ m$^2/$s. The motion of the position $S(t)$ of the liquid-solid interface is proportional to the slope of the temperature, hence the heat flux at $S(t)$. By definition, the interface temperature is identical with the melting temperature, requiring the Dirichlet-condition to move together with the interface along the beam. Thus, the boundary conditions obtain the form of
 \begin{flalign} \label{eq:stefan_problem_bc}
 \begin{split}
@@ -2113,7 +2122,7 @@ To obtain the approximate solution in Nauticle, the discretized forms of \equref
 &\firstpartial{S}{t}=-\sum_j(T_j-T_i)\frac{m_j}{\rho_j}\firstpartial{W_{ij}}{x_j}.
 \end{split}
 \end{flalign}
-The Dirichlet-conditions \equref{eq:stefan_problem_bc} are simply constrained in each time step as $S(t)$ changes. However, a minor issue remained to consider: temperature derivative in Section \equref{eq:stefan_problem_heat} refers to the liquid phase only. This constraint has to be satisfied during the solution. The configuration file to run the simulation of the Stefan-problem is as follows:
+The Dirichlet-conditions \equref{eq:stefan_problem_bc} are simply constrained in each time step as $S(t)$ changes. However, a minor issue remained to consider: temperature derivative in \equref{eq:stefan_problem_heat} refers to the liquid phase only. This constraint has to be satisfied during the solution. The configuration file to run the simulation of the Stefan-problem is as follows:
 \begin{samepage}
 \begin{example}{Shear layer configuration file}{}
 \lstset{basicstyle=\tiny}
