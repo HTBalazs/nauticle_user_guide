@@ -1,9 +1,18 @@
-\newcommand{\nauticleversion}{1.0.170812}
+\newcommand{\nauticleversion}{1.0.170815}
 \newcommand{\installer}{install-\nauticleversion{}.sh}
-\newcommand{\uninstaller}{uninstall-\nauticleversion{}.sh}
 \newcommand{\execname}{\textbf{nauticle}}
 
 \documentclass[a4paper,12pt,openany]{book}
+\usepackage[
+    letterpaper,
+    bindingoffset=0.2in,
+    centering,
+    marginparwidth=2in,
+    textwidth=5.1in,
+    marginparsep=2em,
+    top=2.5cm,
+    bottom=2cm,
+]{geometry} 
 \usepackage{url}
 % \documentclass[a4paper,12pt,openany]{paper}
 \usepackage{float}
@@ -136,7 +145,7 @@ urlcolor=black}
 \newcommand{\myhref}[3][nauticlegreen_dark]{\href{#2}{\color{#1}{#3}}}%
 \newcommand{\norm}[1]{\left\lVert#1\right\rVert}
 \newcommand{\puretext}[1]{\quad\textrm{#1}\quad}
-\newcommand{\myparagraph}[1]{\paragraph{#1}\mbox{}\\}
+\newcommand{\myparagraph}[1]{\paragraph{#1}\mbox{}\\\noindent}
 \newcommand{\mysubparagraph}[1]{\subparagraph{#1}\mbox{}\\}
 \newcommand{\mysection}[1]{\section{#1}\label{sec:#1}}
 \newcommand{\firstpartial}[2]{\frac{\partial #1}{\partial #2}}
@@ -200,7 +209,7 @@ urlcolor=black}
 \begin{center}
 \vspace{5cm}
 \includegraphics[width=0.6\textwidth]{nauticle_logo.pdf}\\[0.5cm]
-{\large A general-purpose particle based meshless numerical simulation tool}\\ [5cm]
+{\large A general-purpose particle-based meshless numerical simulation tool}\\ [5cm]
 % Title
 { \huge \bfseries User's Guide \\[0.2cm] }
 \color{nauticlegreen}
@@ -222,41 +231,41 @@ urlcolor=black}
 \end{titlepage}
 \clearpage\mbox{}\clearpage
 \chapter{Abstract}
-The present manuscript provides a detailed introduction of the novel particle-based simulation tool Nauticle. Nauticle is a general-purpose numerical solver pursuing the easy adoptation and application of arbitrary particle based numerical schemes. Vastly different phenomena like the motion of celestial objects or individuals in a flowing crowd might seem to have nothing in common from both physical and length-scale point of view. However, considering either as a process governed by internodal (interplanetary, interpersonal, etc.) laws, it is manageable to separate the skeleton that is the system of spatially distributed particles, from the physical laws, making the latter exchangeable and combineable arbitrarily. Giving one further consideration to this generalization, Nauticle takes interactions into account as mathematical functions operating on field variables over the particle system. Thus, emerging the governing equations to the user's level, almost arbitrary equation can be constructed using the interaction operators of the already adopted interaction laws.
+The present manuscript provides a detailed introduction of the novel particle-based simulation tool Nauticle. Nauticle is a general-purpose numerical solver pursuing the easy adoption and application of arbitrary particle-based numerical schemes. Although several phenomena from various fields, such as the motion of celestial objects or individuals in a flowing crowd might seem to be fundamentally different from both a physical and a length-scale point of view, considering each of them as a process governed by internodal (interplanetary, interpersonal, etc.) laws, a skeleton comprised of a system of spatially distributed particles can be separated from the physical laws, which therefore becomes arbitrarily exchangeable and combinable. In addition, motivated by this generalization, Nauticle considers interactions as mathematical functions operating on field variables over a particle system. Thus the governing equations are moved to the user's level, facilitating the handling of almost arbitrary equations using the interaction operators of the adopted interaction laws.
 
 \tableofcontents
 
 \mainmatter
-% \raggedbottom
+\raggedbottom
 \section{Introduction}
-Due to their attractive properties, particle-based numerical methods enjoy increasing attention in many fields of engineering applications. In contrast with mesh-based methods  like the Finite Element Method (FEM), particle schemes have more flexible and adaptable spatial discretization of the computational domain of any shape, especially in case of large deformations involving topology changes even with domain splitting \cite{Shaofan2007}.
-From the implementation point of view, most of the common features of particle-based numerical schemes are fundamentally different from mesh-based methods. Some of these differences are the lack of internodal structure (mesh), the persistent changing of nodal connectivity and the overlapping spatial covering of computational domains.
+Due to their attractive properties, particle-based numerical methods enjoy increasing attention in many fields of engineering applications. In contrast to mesh-based methods like the Finite Element Method (FEM), particle schemes have more flexible and adaptable spatial discretization of the computational domain of any shape, especially in case of large deformations involving topology changes even with domain splitting \cite{Shaofan2007}.
+As far as the implementation is considered, most of the common features of particle-based numerical schemes are fundamentally different from mesh-based methods. Some of these differences are the lack of internodal structure (mesh), the persistent changing of nodal connectivity and the overlapping spatial covering of computational domains.
 
-During the past decades several meshless numerical solvers like \cite{GPUSPH} and \cite{LIGGGTHS2012} or \cite{GADGET2} successfully justified the reason for existence of particle methods in engineering and scientific applications. Such tools have successfully solved problems like free surface flows \cite{Monaghan1994} even with fluid-solid interactions \cite{Antoci2007}, crack growth and propagation in a solid domain \cite{Zhang2010} or collision of granular material parcels \cite{Maoa2004} and \cite{Kun1996}, in which areas mesh-based methods usually suffer from serious bottlenecks. Furthermore, the naturally large requirement for computational performance can be compensated by the efficient massive parallelization of computations on multicore CPU and GPGPU devices \cite{DualSPHysics}. However, most of these simulation tools are designed to employ a certain particle scheme, moreover, the governing equations of the physical model is usually buried in the code. The lack of generality from both the physical model and the computational scheme point of view, results in a robust but rigid numerical engine with limited range of applications. % ok 
+During the past decades, several meshless numerical solvers like \cite{GPUSPH} and \cite{LIGGGTHS2012} or \cite{GADGET2} successfully justified the reason for the existence of particle methods in engineering and scientific applications. Such tools have successfully solved problems like free surface flows \cite{Monaghan1994} even with fluid-solid interactions \cite{Antoci2007}, crack growth and propagation in a solid domain \cite{Zhang2010} or collision of granular material parcels \cite{Maoa2004} and \cite{Kun1996}, in which areas mesh-based methods usually suffer from serious bottlenecks. Furthermore, although they are inherently computationally intensive, efficient massive parallelization of computations on multicore CPU and GPGPU devices \cite{DualSPHysics} can be carried out. However, most of these simulation tools are designed to employ a certain particle scheme, moreover, the governing equations of the physical model are usually buried in the code. The lack of generality considering both the physical model and the computational scheme results in a robust but rigid numerical engine with a limited range of applications. % ok 
 
-To leap towards a more general formulation of computations, one needs to distinguish two aspects of generality. Firstly, it is inevitable to emerge the governing equations from the depth of the solver core up to the user's level. Obviously, it requires a fundamentally different realization of the solver but ensures higher flexibility at the same time. Secondly, the governing equations should be interpreted and discretized according to a suitable numerical method, consequently several different methods need to be implemented in the same environment. Using a proper formulation for the interface between the solver core, the different numerical schemes and the user-defined equations it turns out that a truly flexible meshless simulation tool can be established. Note that the existence of multipurpose schemes in a single environment significantly facilitates not only the flexible modelling of almost arbitrary problems but the efficient simulation of coupled problems as well.
+To leap towards a more general formulation of computations, two aspects of generality needs to be distinguished. Firstly, it is inevitable to emerge the governing equations from the depth of the solver core up to the user's level. Obviously, it requires a fundamentally different realization of the solver but ensures higher flexibility at the same time. Secondly, the governing equations should be interpreted and discretized according to a suitable numerical method, consequently, several different methods need to be implemented in the same environment. Using a proper formulation for the interface between the solver core, the different numerical schemes and the user-defined equations it turns out that a truly flexible meshless simulation tool can be established. Note that the existence of multipurpose schemes in a single environment significantly facilitates not only the flexible modeling of almost arbitrary problems but the efficient simulation of coupled problems as well.
 
-It is apperent, that the interest in such numerical tools has begun to increase in the past few years, following the trend of modern FEM-based simulation environments like FEniCS \cite{Fenics} or deal.II \cite{deal2}. Such an attempt on generality evantuated the meshless numerical library SYMPLER by D. Kauzlari et al. \cite{SYMPLER} performing simulations using using both molecular and collocation schemes. However, as M. Robinson and M. Bruna pointed out in \cite{Aboria}, most of the tools (e.g. \cite{LAMMPS}, \cite{ESPResSo} or \cite{GROMACS}) are confined to a more or less narrow area of applications, namely molecular dynemics, and still not sufficiently general from the user's point of view. The recently published moder, general-purpose lightweight (header-only) code Aboria \cite{Aboria} facilitates the flexible implementation and application of particle-based schemes in C++. 
+It is apparent, that the interest in such numerical tools has begun to increase in the past few years, following the trend of modern FEM-based simulation environments like FEniCS \cite{Fenics} or deal.II \cite{deal2}. Such an attempt on generality eventuated the meshless numerical library SYMPLER by D. Kauzlarich et al. \cite{SYMPLER} performing simulations using both molecular and collocation schemes. However, as M. Robinson and M. Bruna pointed out in \cite{Aboria}, most of the tools (e.g. \cite{LAMMPS}, \cite{ESPResSo} or \cite{GROMACS}) are confined to a more or less narrow area of applications, namely molecular dynamics, and still not sufficiently general from the user's point of view. The recently published model, general-purpose lightweight (header-only) code Aboria \cite{Aboria} facilitates the flexible implementation and application of particle-based schemes in C++. 
 
-Nauticle is a novel general-purpose open-source C++ scientific numerical environment and solver for the application and implementation particle methods. The goal of the library is to  establish a particle-based numerical solver that can solve user-defined system of algebraic and differential equations over a set of spatially distributed particles in one, two or three dimensions with the most suitable numerical particle-schemes. Solutions can be governed by priori implemented schemes like Smoothed Particle Hydrodynamics (SPH), Discrete Element Method (DEM), or even the Social Froce Model (SFM) etc.
+Nauticle is a novel general-purpose open-source C++ scientific numerical environment and solver for the application and implementation particle methods. The goal of the library is to establish a particle-based numerical solver that can solve user-defined system of algebraic and differential equations over a set of spatially distributed particles in one, two or three dimensions with the most suitable numerical particle-schemes. Solutions can be governed by priori implemented schemes like Smoothed Particle Hydrodynamics (SPH), Discrete Element Method (DEM), or even the Social Force Model (SFM) etc.
 
-The exctraction of the most essential features of Nauticle:
+Hgihlighted features:
 \begin{itemize}
   \item Simulations in one-, two- or three-dimensions,
-  \item Predefined particle-based interaction operators: N-body gravitational interactions, SPH, DEM, DVM and SFM,
-  \item Usage through short and clear-cut XML-formatted configuration files without coding in C++,
+  \item Predefined particle-based interaction operators: N-body gravitational interactions, SPH, DEM, DVM, and SFM,
+  \item Usage through user-friendly, short and clear-cut XML-formatted configuration files without coding in C++,
   \item Truly arbitrary system of equations built up using the variety of arithmetic operators, arithmetic functions and interaction operators.
   \item Arbitrary amount of scalar-, vector- or tensor fields over the set of particles,
-  \item Periodic and symmetric or cut-off (neither periodic, nor symmetric) boundaries,
+  \item Periodic and symmetric or cut-off (neither periodic nor symmetric) boundaries,
   \item Arbitrary combination of any predefined schemes,
-  \item Astonishingly simple implementation of further schemes in C++ without the knowledge of the core of Nauticle.
+  \item Straightforward implementation of further schemes in C++ without the knowledge of the core of Nauticle.
 \end{itemize}
 
-\textit{The user's guide is organized as follows: Firstly, the most important fundamentals and classification of particle methods are discussed, than, yet in the same section, the built-in methods are briefly presented. Later, the most important coding issues and features are described. After presenting the main aspects of the usage of Nauticle, the intermediate user and developer interface are introduced and explained in detail along with a step-by-step implementation guide. The discussion of the interface is followed by the short introduction to the Nauticle package and the installation procedure. In the last sections the examples help the reader to recognise the application presented methods, finally, the files of Nauticle are labeled by their exact role in solver.}
+\textit{The user's guide is organized as follows: Firstly, the most important fundamentals and classification of particle methods are discussed, then, yet in the same section, the built-in methods are briefly presented. Later, the most important coding issues and features are described. After presenting the main aspects of the usage of Nauticle, the intermediate user and developer interface is introduced and explained in detail along with a step-by-step implementation guide. The discussion of the interface is followed by the short introduction to the Nauticle package and the installation procedure. In the last sections the examples help the reader to recognize the application of the presented methods, finally, the files of Nauticle are labeled by their exact role in solver.}
 
 \section{Methodology}
 \subsection{Particle methods} \label{sec:particle_method_classification}
-Several classification of the particle methods exist based on different mathematical or physical aspects. From the mathematical point of view we can distinguish methods that operate on the strong form of Partial Differential Equations (PDE's) from those that solve the weak form of PDE's. Another classification is possible based on the physical characteristics of the domain to be modeled. On the one hand, there are continuum domains such as fluids or solids where the element of discretization should represent a more or less intuitively delimited macroscopic portion of continuum phase, while on the other hand, there are granular phases, like sand or molecules, where each element is assigned to a physically existing individual material parcel or molecule. Here we focus on the concept of the latter, the physical classification.
+Several classifications of the particle methods exist based on different mathematical or physical aspects. From the mathematical point of view, we can distinguish methods that operate on the strong form of Partial Differential Equations (PDE's) from those that solve the weak form of PDE's. Another classification is possible based on the physical characteristics of the domain to be modeled. On the one hand, there are continuum domains such as fluids or solids where the element of discretization should represent a more or less intuitively delimited macroscopic portion of continuum phase, while on the other hand, there are granular phases, like sand or molecules, where each element is assigned to a physically existing individual material parcel or molecule. Here we focus on the concept of the latter, the physical classification.
 \subsubsection{Continuum methods}
 This subsection contains some of the fundamental considerations of continuum particle methods with the definitions provided by \cite{Shaofan2007}. \\
 
@@ -307,17 +316,17 @@ B_{\rho}(\overline{\textbf{x}})=\{\textbf{x}|\norm{\textbf{x}-\overline{\textbf{
 \end{align}
 denotes a closed spherical ball shaped domain of influence with radius $\rho$ around $\overline{\textbf{x}}$. \\
 
-Some of the continuum methods solve the strong form of PDE's, such as Smoothed Particle Hydrodynamics (SPH), which is a special collocation scheme, while others operate with the weak form of the PDE's for instance Element-Free Galerkin method (EFG), Meshless Local Petrov Galerkin (MLPG), Reproducing Kernel Particle Method (RKPM) etc.
+Some of the continuum methods solve the strong form of PDE's, such as Smoothed Particle Hydrodynamics (SPH), which is a special collocation scheme, while others operate with the weak form of the PDE's, for instance, Element-Free Galerkin method (EFG), Meshless Local Petrov Galerkin (MLPG), Reproducing Kernel Particle Method (RKPM) etc.
 \subsubsection{Discrete methods}
 In contrast to the representation of continuum domains, discrete methods do not apply meshfree interpolation techniques. Instead, the interactions (e.g. collisions) of macroscopic or molecular elements are directly calculated using physics-based models. Obviously, in the case of these methods, no spatial discretization is required due to the layout provided by the physical domain itself.
 
-These methods are the Discrete Element Method (DEM), Molecular Dynamics (MD) and the simulation of self-gravitating multibody problems can be mentioned here as well. Furthermore almost any problem governed by specific intearaction laws can be modelled in which the state of individual objects depend on each other, such as a crowd, traffic or a cloud of cooperation drones. This concept is explained later in Section \ref{sec:interface}.
+These methods are the Discrete Element Method (DEM), Molecular Dynamics (MD) and the simulation of self-gravitating multibody problems can be mentioned here as well. Furthermore, almost any problem governed by specific interaction laws can be modeled in which the state of individual objects depend on each other, such as a crowd, traffic or a cloud of cooperation drones. This concept is explained later in Section \ref{sec:interface}.
 
 \subsection{Methods implemented in Nauticle} \label{sec:implemented}
 Nauticle itself can be considered as an empty frame, until at least one numerical method is implemented and connected through its interface (see Section \ref{sec:interface}). This section provides a brief introduction of five widespread particle methods that are already implemented in Nauticle. The author encourages the reader to study the referred publications for more detailed and exhausting explanations of these topics.
 
 \subsubsection{N-body problem}
-The investigation of the dynamics of celestial objects with gravitational interaction has been motivated by the desire to calculate and predict the motion of the planets in the Solar system for arbitrary past or future times. The physical problem to solve in such a problem is often referred as the N-body problem.
+The investigation of the dynamics of celestial objects with gravitational interaction has been motivated by the desire to calculate and predict the motion of the planets in the Solar system for arbitrary past or future times. The underlying physical problem is often referred as the N-body problem.
 \myparagraph{Equation of motion}
 In the multibody system the motion of a single object is governed by
 \begin{flalign} \label{eq:nbody_eom}
@@ -326,13 +335,13 @@ In the multibody system the motion of a single object is governed by
 where $\textbf{r}_i$ is the position of the $i^{th}$ object $\gamma$ is the gravitational constant, $m_i$ is the mass of object $i$, $N$ is the number of objects in the system and $\textbf{n}_{ji}=(\textbf{r}_j-\textbf{r}_i)/|\textbf{r}_j-\textbf{r}_i|$ is the normalized direction vector between the objects $i$ and $j$. Considering the planets as rotationally invariant spherical objects, their angular motion does not influence the translational motions. This model has $N^2$ number of interactions.
 
 \subsubsection{Smoothed Particle Hydrodynamics (SPH)} \label{sec:SPH_intro}
-In the late 1970's the first papers on Smoothed Particle Hydrodynamics (SPH) were published by R.A. Gingold and J.J. Monaghan \cite{Gingold1977} and independently by B. Lucy \cite{Lucy1977}. One of the motivations to construct SPH was the necessity of numerical methods dealing with boundaryless problems. Initially, SPH was applied in astrophysical simulations, later, in the  early 1990's the first applications to fluid and solid mechanics problems appeared. During  the past two decades increasing attention was focused on SPH in both scientific and industrial areas, and the most significant progress of the development is done in the past fifteen years.\\
+In the late 1970's the first papers on Smoothed Particle Hydrodynamics (SPH) were published by R.A. Gingold and J.J. Monaghan \cite{Gingold1977} and independently by B. Lucy \cite{Lucy1977}. One of the motivations to construct SPH was the necessity of numerical methods capable to deal with boundaryless problems. Initially, SPH was applied in astrophysical simulations, later, in the early 1990's the first applications to fluid and solid mechanics problems appeared. During the past two decades, increasing attention was focused on SPH in both scientific and industrial areas, and the most significant progress of the development was made in the past fifteen years.\\
 SPH is a fully meshless collocation scheme representing continuum fields with spatially distributed set of particles (meshless interpolation). The basic idea of SPH is the generalized interpolation
 \begin{flalign} \label{convolution_delta}
   A(\textbf{r})=\int_{\Omega}{A(\textbf{r}')\delta(\textbf{r}-\textbf{r}')dV},
 \end{flalign}
 where $A(\textbf{r})$ is an arbitrary function, $\delta$ is the Dirac-function, and $\Omega$ is an opened or closed spatial domain \cite{Monaghan2005}. The convolution \equref{convolution_delta} is directly not applicable in numerical models due to two reasons. On the one hand, the Dirac-function is  neither continuous nor finite. On the other hand, the integration can be performed on analytic functions only.
-The first step should be the application of a mathematically more favorable smoothing kernel or  mollifier function $W(\textbf{r}-\textbf{r}',\sigma)$ instead of the Dirac-function:
+Accordingly, a mathematically more favorable smoothing or mollifier function $W(\textbf{r}-\textbf{r}',\sigma)$ should be applied instead of the Dirac-function:
 \begin{flalign} \label{convolution_kernel}
   A(\textbf{r})\approx\int_{\Omega}{A(\textbf{r}')W(\textbf{r}-\textbf{r}',\sigma)dV}.
 \end{flalign}
@@ -410,9 +419,9 @@ is often applied to the velocity field in fluid simulations to improve spatial d
 
 
 \subsubsection{Discrete Element Method (DEM)} \label{sec:DEM_intro}
-In constrast to SPH, the Discrete Element Method (DEM) provides a formulation for modelling discontinuous materials through direct calculation of interaction forces between colliding elements. DEM is introduced by P.A. Cundall in 1971 \cite{Cundall1971} for particles with identical, regular shapes. Later the method was extended to particles with irregular shapes by M.A. Taylor et al. in 2006 \cite{Taylor2006}.
+In contrast to SPH, Discrete Element Method (DEM) provides a formulation for modeling discontinuous materials through direct calculation of interaction forces between colliding elements. DEM was introduced by P.A. Cundall in 1971 \cite{Cundall1971} for particles with identical, regular shapes. Later the method was extended to particles with irregular shapes by M.A. Taylor et al. in 2006 \cite{Taylor2006}.
 % Today, a wide variety of normal and tangential contact force model exists based on different physical assumptions.
-The method is suitable to exploit the general potentials of particle methods such as parallelisation and it became one of the most famous particle-based tools for modelling motion of granular materials in engineering applications. In Nauticle the implemented DEM model assumes rotationally invariant spherical particles with varying radii. 
+The method is suitable to exploit the general potentials of particle methods such as parallelisation and it became one of the most famous particle-based tools for modelling the motion of granular materials in engineering applications. In Nauticle the implemented DEM model assumes rotationally invariant spherical particles with varying radii. 
 \myparagraph{Equations of motion}
 The motion of particle $i$ in space can be described by Newton's second law
 \begin{flalign} \label{eq:restrictionDEM_EOM}
@@ -474,9 +483,9 @@ The equations \equref{eq:restrictionDEM_EOM} form a system of $N$ algebraic equa
 
 
 \subsubsection{Discrete Vortex Method (DVM)} \label{sec:DVM}
-Vortex methods are meshless numerical tools for modelling inviscid fluid flow governed by point vortices. The basic idea behind vortex methods is that vorticity is a conserved quantity in inviscid flows, consequently the flow field can be determined using a set of point vortices drifting in the velocity field induced by themselves \cite{DVM_URL}.
+Vortex methods are meshless numerical tools for modeling inviscid fluid flow governed by point vortices. The basic idea behind vortex methods is that vorticity is a conserved quantity in inviscid flows, consequently, the flow field can be determined using a set of point vortices drifting in the velocity field induced by themselves \cite{DVM_URL}.
 
-First of all the vorticity is defied as the curl of the velocity field $\textbf{v}$:
+First of all the vorticity is defined as the curl of the velocity field $\textbf{v}$:
 \begin{flalign} \label{DVM_vorticity}
 &\bm{\omega}=\nabla\times \textbf{v}.
 \end{flalign}
@@ -484,7 +493,7 @@ For incompressible fluids the continuity equation reduces to
 \begin{flalign} \label{DVM_continuity}
 &\nabla\cdot\dot{\textbf{v}}=0,
 \end{flalign}
-which can be automatically satisfied by introducing the vector streamfunction such that
+which can be automatically satisfied by introducing the vector streamfunction $\Psi$ such that
 \begin{flalign} \label{DVM_vector_streamfunction}
 &\textbf{v}=\nabla\times\Psi.
 \end{flalign}
@@ -492,9 +501,9 @@ By assuming the vector streamfunction to be divergence free, the vorticity can n
 \begin{flalign} \label{DVM_vector_poisson}
 &\bm{\omega}\nabla\times\nabla\times\Psi=\nabla(\nabla\dot\Psi)-\nabla^2\Psi=-\nabla^2\Psi,
 \end{flalign}
-the vector Poisson's equation for the streamfunction. The equation \equref{DVM_vector_poisson} in case of a single point vortex at position $\textbf{r}_0$ with vorticity strength $\bm{\omega}$ in infinite domain has the form
+the vector Poisson's equation for the streamfunction. Equation \equref{DVM_vector_poisson} in case of a single point vortex at position $\textbf{r}_0$ with vorticity strength $\bm{\omega}$ in infinite domain has the form
 \begin{flalign} \label{DVM_poisson_single}
-\nabla^2\Psi=-\bm{\omega}\frac{\delta(|\textbf{r}-\textbf{r}_0|)}{2\pi |\textbf{r}-\textbf{r}_0|},
+\nabla^2\Psi=-\bm{\omega}\frac{\delta(|\textbf{r}-\textbf{r}_0|)}{2\pi |\textbf{r}-\textbf{r}_0|}.
 \end{flalign}
 The solution of \equref{DVM_poisson_single} can be obtained by Green's function:
 \begin{flalign} \label{DVM_streamfunction_single}
@@ -514,13 +523,13 @@ The implication of point vortices may cause stability problems due to the singul
 \end{flalign}
 where $\epsilon$ is the width of the Gaussian kernel. This approximation eliminates the numerically unmanageable high velocities in the immediate vicinity of vortex points but provides accurate velocity contribution elsewhere. The associated velocity field advects the vortex points in space without changing their strength of vorticity. Obviously the new layout of vortex points induces a different velocity field providing the subsequent instant of the time-dependent inviscid flow. 
 
-Although there are several variants of vortex methods involving boundary conditions as constaints analogously to the Methods of Fundamental Solutions (MFS), only the basic Discrete Vortex Method is implemented in Nauticle.
+Although there are several variants of vortex methods involving boundary conditions as constraints analogously to the Methods of Fundamental Solutions (MFS), only the basic Discrete Vortex Method is implemented in Nauticle.
 
 \subsubsection{Standard Social Force Model (SFM)} \label{sec:SFM}
-Evacuation time and efficiency aquire crucial importance during the design process of modern buildings. The demand of safety protocols facilitate the research of crowd motion under predifined conditions. In the recent decades, several models of different fundamentals were built to simulate the flow of people in buildings of complex geometries based on the fundamental work of D. Helbing and P. Molnár \cite{Helbing1995}. More recent models like \cite{Tissera2012} (analogy with fluid mechanics) or \cite{Li2015} (implying Cellular Automata (CA)) were built to simulate large scale dynamics of pedestrians.
+Evacuation time and efficiency acquire crucial importance during the design process of modern buildings. The demand of safety protocols facilitates the research of crowd motion under predefined conditions. During the recent decades, several models of different fundamentals were built to simulate the flow of people in buildings of complex geometries based on the fundamental work of D. Helbing and P. Molnár \cite{Helbing1995}. More recent models like \cite{Tissera2012} (analogy with fluid mechanics) or \cite{Li2015} (implying Cellular Automata (CA)) were built to simulate large scale dynamics of pedestrians.
 
-The standard Social Force Model is a micro-scale deterministic model considering the intentions of each individual person as driving forces besides the repulsive forces during collisions of ther bodies.
-One of the simplest driving force included in the equation
+The standard Social Force Model is a micro-scale deterministic model considering the intentions of each individual person as driving forces besides the repulsive forces during collisions of their bodies.
+One of the simplest driving force is included in the equation
 \begin{flalign} \label{SFM_ode}
 &\frac{d\textbf{v}_i}{dt}=\frac{v_0\textbf{e}_0-\textbf{v}_i}{\tau}-\frac{1}{m_i}\sum_{j\neq i}{\bigg[A_i exp\bigg(\frac{R_{ij}-d_{ij}}{B_i}\bigg)+k(R_{ij}-d_{ij})-c_{ij}\bigg]\textbf{n}_{ji}},
 \end{flalign}
@@ -550,15 +559,15 @@ A common choice for integration of second order equation of motion is the veloci
 &x^{n+1}=x^n+v^n\Delta t+\frac{a^n}{2}\Delta t^2, \\
 &v^{n+1}=v^n+\frac{a^n+a^{n+1}}{2}\Delta t.
 \end{flalign}
-As it is visible, it is assumed that the acceleration $a^{n+1}$ does not depend on $v^{n+1}$.
+As can be seen, it is assumed that the acceleration $a^{n+1}$ does not depend on $v^{n+1}$.
 
 \section{Implementation}
 \subsection{The Nauticle environment} \label{sec:environment}
 The basic idea of the Nauticle environment is that any particle method (regardless of the classification in Section \ref{sec:particle_method_classification}) can be considered as the determination of interactions between spatially distributed point-like nodes (particles). This assumption leads to the general interpretation of particle methods as \textit{interactions} (read more about the interactions in Section \ref{sec:interface}). 
 
 In this section the definitions corresponding to Nauticle are introduced, then the most important implementation methodologies and features of the solver are discussed.
-\subsubsection{Definitions}
-\textbf{Tensor}: Tensors in Nauticle have a few restrictions that are discussed here for the sake of clarity and simplicity. The tensor $\textbf{T}$ is a zeroth ($\textbf{T}\in\R$), first ($\textbf{T}\in\R^d$), or second ($\textbf{T}\in\R^d\otimes\R^d$) order real valued tensor, in $d=1,2,3$ dimensions. Throughout this guide tensors are considered to obey these restrictions, otherwise it is indicated. Furthermore, all the quantities (scalar, vector and tensor) are represented by tensors.
+\subsubsection{Definitions} \label{sec:definitions}
+\textbf{Tensor}: Tensors in Nauticle have a few restrictions that are discussed here for the sake of clarity and simplicity. The tensor $\textbf{T}$ is a zeroth ($\textbf{T}\in\R$), first ($\textbf{T}\in\R^d$), or second ($\textbf{T}\in\R^d\otimes\R^d$) order real valued tensor, in $d=1,2,3$ dimensions. Throughout this guide tensors are considered to obey these restrictions, otherwise, it is indicated. Furthermore, all the quantities (scalar, vector, and tensor) are represented by tensors.
 
 \textbf{Domain}: Consider the simply connected rectangular subset $\Gamma^d\subset\R^d$ ($d=1,2,3$), with edge size $\bm{\lambda}\in\R$ and its boundary $\partial\Gamma^d$. The $\Gamma^d$ subset is a $d$ dimensional domain, if the
 \begin{flalign}
@@ -577,9 +586,9 @@ conditions are satisfied.
 \textbf{Field}: Consider a particle system $\textbf{P}_N$ of particles $\textbf{r}_i$, $i=1,2..N$. The set $\textbf{F}_N=\left\{\textbf{f}_i\leftarrow \textbf{r}_i \vert i=1,2,...,N\right\}$ is a field over $\textbf{P}_N$ if $\textbf{f}_i$ is a real valued zeroth, first or second order tensor associated to particle $i$.
 
 \subsection{n-nearest neighbor search} \label{sec:neighbor_search}
-One of the specific properties of particle methods is the continually changing particle layout. Since no interparticle structure is considered, the connectivity may change (except for Lagrangian or unbounded mollifier functions) with the particle positions. The naive ($N^2$ complexity) determination of particle interactions is usually unsatisfactory due to its high performance requirement, therefore a more efficient neighbor searching algorithm should be used instead \cite{CUDA_EXAMPLE}. Here a simple and memory-efficient algorithm is implemented. The basic idea of the method is that a so-called hash key is assigned to each particle depending on the cell it occupies. Since all the particles that occupy the same cell obtain identical hash keys, the list of particles of the adjacent cells can be constructed easily.
+One of the specific properties of particle methods is the continually changing particle layout. Since no interparticle structure is considered, the connectivity may change (except for Lagrangian or unbounded mollifier functions) with the particle positions. The naive ($N^2$ complexity) determination of particle interactions is usually unsatisfactory due to its high-performance requirement, therefore a more efficient neighbor searching algorithm should be used instead \cite{CUDA_EXAMPLE}. Here a simple and memory-efficient algorithm is implemented. The basic idea of the method is that a so-called hash key is assigned to each particle depending on the cell it occupies. Since all the particles that occupy the same cell obtain identical hash keys, the list of particles of the adjacent cells can be constructed easily.
 
-The bottleneck of this algorithm is that the particle positions need to be sorted by the hash keys, which can be compuationally expensive. However, when the particle layout does not change too much before the recalculation of the hash keys, the sorting process is cheap because most of the particle's hash keys are already organized in the proper order.\\
+The bottleneck of this algorithm is that the particle positions need to be sorted by the hash keys, which can be computationally expensive. However, when the particle layout does not change too much before the recalculation of the hash keys, the sorting process is cheap because most of the particle's hash keys are already organized in the proper order.\\
 \begin{figure}[H]
   \includegraphics[scale=0.6]{hash_key.pdf}
   \centering
@@ -603,12 +612,12 @@ Later, during the calculation of particle interactions, the particles of the adj
 Particle neighbor search is automatically managed during any simulation in Nauticle.
 
 \subsection{Periodic, symmetric and cut-off boundaries} \label{sec:boundaries}
-The computational domain $\Omega$ defined in (TODO) forms the particles' frame of reference. Since no particle can ever exist outside the domain, the bounding surface $\partial\Omega$ applies symmetric or periodic rules to avoid the exclusion by handling particles that intend to cross the surface. One more special case, a cut-off boundary is implemented as well to avoid undesireable interactions. Obviously, the opposite boundaries of $\Omega$ have to be both periodic, symmetric or cut-off boundaries.
+The computational domain $\Omega$ defined in Section \ref{sec:definitions} forms the particles' frame of reference. Since no particle can ever exist outside the domain, the bounding surface $\partial\Omega$ applies symmetric or periodic rules to avoid the exclusion by handling particles that intend to cross the surface. One more special case, a cut-off boundary is implemented as well to avoid undesirable interactions. Obviously, the opposite boundaries of $\Omega$ have to be both periodic, symmetric or cut-off boundaries.
 Each type of boundary conditions imply the repositioning of exiting particle $i$ applying the
 \begin{flalign} \label{eq:restriction}
 \textbf{r}_i\leftarrow \textbf{r}_i mod \lambda
 \end{flalign}
-restriction, where $\lambda$ is the size of $\Omega$. However, exiting should ideally never occur in case of symmetric boundary. The restriction \equref{eq:restriction} does not provide either correct periodic or symmetric boundary conditions in itself. To take these conditions into account, the overhanging influence radius should be replaced or reflected properly. The physical interpretation of influence radius in the vicinity of periodic ($\partial\Omega_p$) and symmetric ($\partial\Omega_s$) boundaries is shown in Figure \ref{fig:periodic_symmetric}.
+restriction, where $\lambda$ is the size of $\Omega$. However, exiting should ideally never occur in case of a symmetric boundary. The restriction \equref{eq:restriction} does not provide either correct periodic or symmetric boundary conditions in itself. To take these conditions into account, the overhanging influence radius should be replaced or reflected properly. The physical interpretation of influence radius in the vicinity of periodic ($\partial\Omega_p$) and symmetric ($\partial\Omega_s$) boundaries is shown in Figure \ref{fig:periodic_symmetric}.
 \begin{figure}[H]
   \includegraphics[scale=0.8]{periodic_symmetric_2.pdf}
   \centering
@@ -632,7 +641,7 @@ Since in case of the symmetric condition the interactions are calculated by part
 &\textbf{R}=\textbf{I}^d(-2\bm{\beta}_i+1),
 \end{flalign}
 where $I^d$ is a $d$ dimensional identity tensor. 
-Note that in case of certain quantities like angular velocity, or vorticity the reflection \equref{eq:reflection_periodic_symmetric} could be physically incorrect. Such cases required to be treated particularly at symmetric boundaries by marking a field as non-symmetric (see the details in Section \ref{sec:DVM_example}).
+Note that in case of certain quantities like angular velocity, or vorticity the reflection \equref{eq:reflection_periodic_symmetric} could be physically incorrect. Such cases are required to be treated with attention at symmetric boundaries by marking a field as non-symmetric (see the details in Section \ref{sec:DVM_example}).
 
 
 \subsection{Expression tree}
@@ -652,10 +661,10 @@ After the transformation of a user-defined expression to Reverse Polish Notation
   \label{fig:expression_example}
 \end{figure}\vspace*{3pt}
 
-Although the nodes of the expression tree implement different quantities and operators of Nauticle, all nodes are considered to operate on tensors. In the following, the branches and nodes of the expression tree are discussed.
+Although the nodes of the expression tree specify different quantities and operators of Nauticle, all nodes are considered to operate on tensors. In the following, the branches and nodes of the expression tree are discussed.
 
 \subsubsection{The symbol branch}
-On the one hand, the single symbols like constants and variables represent global values for the simulation (such as the time step size or gravitational acceleration), which usually have the same value for each particle, consequently one (single) instance is sufficient to be stored. Therefore the single quantities have very small memory requirements. However, in case of multistep integrators, the desired number of former values of variables are automatically stored. Obviously it is unnecessary for constant values, since they cannot be changed during their lifetime. On the other hand, the fields are interpreted over a set of spatial nodes (particles) storing tensor values assigned to each of the particles. Former values for multistep integrators are automatically stored as well, as in case of the variables. A special implementation of a field is the particle system itself, storing the particle positions as field variables. The particle system is special not only because it stores particle positions but it performs n-nearest neighbor search and stores the computational domain too. The restriction \equref{eq:restriction} of particles to the domain is also performed by the particle system.
+On the one hand, the single symbols like constants and variables represent global values for the simulation (such as the time step size or gravitational acceleration), which usually have the same value for each particle, consequently, one (single) instance is sufficient to be stored. Therefore the single quantities have very small memory requirements. However, in case of multistep integrators, the desired number of previous values of variables are automatically stored. Obviously it is unnecessary for constant values since they cannot be changed during their lifetime. On the other hand, the fields are interpreted over a set of spatial nodes (particles) storing tensor values assigned to each of the particles. Former values for multistep integrators are automatically stored as well, as in case of the variables. A special implementation of a field is the particle system itself, storing the particle positions as field variables. The particle system is special not only because it stores particle positions but it performs n-nearest neighbor search and stores the computational domain too. The restriction \equref{eq:restriction} of particles to the domain is also performed by the particle system.
 
 \subsubsection{The operator branch}
 The other main branch of the expression tree is the branch of operators acting on symbols. Operators are classified into three groups:
@@ -742,7 +751,7 @@ Verlet velocity & $verlet\_v$ & $\dot r$, $\ddot r$, $\Delta t$ \\
 \end{table}
 
 \myparagraph{Interactions} \label{sec:interactions}
-It was pointed out earlier in Section \ref{sec:environment} that any particle method can be considered as a collection of particle interaction laws. Accordingly, the interaction branch forms an essential part of not only the expression tree but also the Nauticle environment. This group of operators deals with particle interactions that certainly depend on field quantities (and the particle system). Furthermore the interaction branch provides an intermediate development interface, which is introduced in detail later in Section \ref{sec:interface}.
+It was pointed out earlier in Section \ref{sec:environment} that any particle method can be considered as a collection of particle interaction laws. Accordingly, the interaction branch forms an essential part of not only the expression tree but also the Nauticle environment. This group of operators deals with particle interactions that certainly depend on field quantities (and the particle system). Furthermore, the interaction branch provides an intermediate development interface, which is introduced in detail later in Section \ref{sec:interface}.
 The simplest functions in this branch are presented in Table \ref{tbl:fsearch}. Since the magnitude of an arbitrary tensor quantity is ambiguous, these field-functions can be evaluated only over scalar fields (last column of Table \ref{tbl:fsearch}). These functions have approximately linear computational complexity.
 \begin{table}[H]
 \begin{center}
@@ -760,9 +769,9 @@ Field sum & $fsum$ & 1 & $[n \times m]$\\
 \end{center}
 \end{table}
 
-Further interaction operators in Nauticle summarized below are related to the operators of the particle methods presented in Section \ref{sec:implemented} providing the opportunity of simultaneous application of any of the interaction operators. For deeper explanation about the implementation of interaction operators please refer to Section \ref{sec:interface}.
+Further interaction operators in Nauticle summarized below are related to the operators of the particle methods presented in Section \ref{sec:implemented} providing the opportunity of simultaneous application of any of the interaction operators. For a deeper explanation of the implementation of interaction operators refer to Section \ref{sec:interface}.
 
-First of all, it is beneficial to describe the built-in filter functions, which form the basis of some of the particle methods. The implemented filter functions (kernels) in Nauticle are enumerated below.
+First of all, it is beneficial to understand the built-in filter functions, which form the basis of some of the particle methods. The implemented filter functions (kernels) in Nauticle are enumerated below.
 
 \textbf{Second order polynomial (quadratic)}:
 \begin{flalign} \label{eq:kernel_quadratic}
@@ -771,13 +780,15 @@ W^{quadratic}(q)=\alpha_D\bigg(\frac{3}{16}q^2-\frac{3}{4}q+\frac{3}{4}\bigg),
 where $D$ is the number of the dimensions, $\alpha_1=1/\sigma$, $\alpha_2=2/(\pi \sigma^2)$ and $\alpha_3=5/(4\pi \sigma^3)$ are the normalisation coefficients, and $q=|r|/\sigma$ with the smoothing distance $\sigma$. The influence radius of the quadratic kernel equals $2q$. 
 
 \textbf{Third order polynomial (cubic)}:
-\[
+% \[
+\begin{equation}
     W^{cubic}(q)= \alpha_D
 \begin{cases}
   1-\frac{3}{2}q^2+\frac{3}{4}q^3;  & \text{if } q\leq1\\
   \frac{1}{4}(2-q)^3& \text{if } 1 < q \leq 2
 \end{cases}
-\]
+\end{equation}
+% \]
 Here $\alpha_1=2/(3h)$, $\alpha_2=10/(7\pi \sigma^2)$ and $\alpha_3=1/(\pi \sigma^3)$. The influence radius of the cubic kernel also equals $2q$.
 
 \textbf{Fifth order polynomial (quintic)}:
@@ -792,7 +803,7 @@ W^{Gaussian}(q)=\alpha_D\exp\bigg(-\frac{q^2}{4}\bigg)
 \end{flalign}
 The normalisation coefficients are $\alpha_1=1/(\sigma\sqrt{2\pi})$, $\alpha_2=1/(2\pi \sigma^2)$ and $\alpha_3=1/(2\pi \sigma^2)^{3/2}$. The influence radius of the Gaussian kernel is infinite.
 
-Meshless interpolants often require not the kernel function itself but its derivative, therefore the first order derivative of the presented kernels are also included. To apply any of the filter kernels in Nauticle, a simple identifier explained in Figure \ref{fig:kernel_explanation} is associated to them.
+Meshless interpolants often do not require the kernel function itself but its derivative, therefore the first order derivative of the presented kernels are also included. To apply any of the filter kernels in Nauticle, a simple identifier explained in Figure \ref{fig:kernel_explanation} is associated with them.
 \begin{figure}[H]
   \includegraphics[scale=0.3]{kernel_explanation.pdf}
   \centering
@@ -801,7 +812,7 @@ Meshless interpolants often require not the kernel function itself but its deriv
 \end{figure}
 
 \mysubparagraph{N-body operator}
-The simplest implemented scheme in Nauticle, namely the gravitational N-body problem is simply considered as a single interaction operator identical to the RHS of \equref{eq:nbody_eom}. It is described in Table \ref{tbl:nbody_op}.
+The simplest implemented scheme in Nauticle, namely the gravitational N-body problem is simply considered as a single interaction operator identical to the RHS of \equref{eq:nbody_eom}, described in Table \ref{tbl:nbody_op}.
 \begin{table} [hbt!]
 \begin{center}
 \caption{N-body problem operator.}\label{tbl:nbody_op}
@@ -814,7 +825,7 @@ $nbody$ & $m$, $\gamma$ & $\frac{d^2\textbf{r}_i}{dt^2}=\gamma\sum_j^N{\frac{m_i
 \end{tabular}
 \end{center}
 \end{table}
-Obviously, mass $m$ is allowed to be a field to vary particlewise, while gravitational constant $\gamma$ is a true single value, even if a field is provided. In the latter case the zeroth value of the field is used over each interaction. The $nbody$ operator has quadratic computational complexity, due to the infinite gravitational influence radius. Note that it is not recommended to use this operator on particles close to the domain boundary of any type, furthermore, neither periodic nor symmetric boundary conditions are suitable to simulate infinite patterns of self-gravitating particle cloud.
+Obviously, mass $m$ is allowed to be a particlewise varying field, while gravitational constant $\gamma$ is a true single value, even if a field is provided. In the latter case the zeroth value of the field is used over each interaction. The $nbody$ operator has quadratic computational complexity due to the infinite gravitational influence radius. Note that it is not recommended to use this operator on particles close to the domain boundary of any type, furthermore, neither periodic nor symmetric boundary conditions are suitable to simulate infinite patterns of self-gravitating particle cloud.
 
 \mysubparagraph{SPH operators}
 In this section the usage of the same operators as in Section \ref{sec:SPH_intro} are discussed without the deduction of the interpolants.
@@ -843,10 +854,10 @@ $sph\_L1$ & $B$, $A$, $m$, $\rho$, $W$, $R_{infl}$ & $\langle \nabla (B_i \nabla
 \end{tabular}
 \end{center}
 \end{table}
-The gradient, divergence and Laplacian operators are denoted by $G$, $D$ and $L$ respectively, $R_{infl}$ is the influence radius and $\otimes$ refers the outer product. Although divergence and gradient operators are distinguished by the product type, they give the same result in certain cases, for instance in one dimension or if $A$ is scalar.
+The gradient, divergence and Laplacian operators are denoted by $G$, $D$ and $L$ respectively, $R_{infl}$ is the influence radius and $\otimes$ refers to the outer product. Although divergence and gradient operators are distinguished by the product type, they give the same result in certain cases, for instance in one dimension or if $A$ is scalar.
 
 \mysubparagraph{DEM operators}
-As it is shown in Section \ref{sec:DEM_intro} the particle motion is governed by two separate ordinary differential equations, consequantly the linear and angular motion have to be treated separately. The two individual DEM operators are described in Table \ref{tbl:DEM_ops} including the same notations as in Section \ref{sec:DEM_intro}.
+As it is shown in Section \ref{sec:DEM_intro} the particle motion is governed by two separate ordinary differential equations, consequently the linear and angular motion have to be treated separately. The two individual DEM operators are described in Table \ref{tbl:DEM_ops} including the same notations as in Section \ref{sec:DEM_intro}.
 \begin{table} [h!]
 \begin{center}
 \caption{Operators of the Discrete Element Method.} \label{tbl:DEM_ops}
@@ -899,18 +910,18 @@ The term $f_{ij}$ in the description represents the interaction forces between p
 
 
 \section{Using Nauticle} \label{sec:usage_of_nauticle}
-Nauticle is designed not only to simulate wide range of physical models through user defined equations, but also to form a user- and developer-friendly interface for implementation of arbitrary meshless numerical schemes. As a result, a flexible simulation tool is emerged to facilitate the application of particle based methods. In Figure \ref{fig:three_levels} the three separated levels of the Nauticle solver is presented and described shortly by pointing out the main aspects of each.
+Nauticle is designed not only to simulate a wide range of physical models through user-defined equations but also to form a user- and developer-friendly interface for implementation of arbitrary meshless numerical schemes. As a result, a flexible simulation tool is emerged to facilitate the application of particle-based methods. In Figure \ref{fig:three_levels} the three separated levels of the Nauticle solver is presented and described shortly by pointing out the main aspects of each.
 \begin{figure}[H]
   \includegraphics[scale=0.55]{three_levels.pdf}
   \centering
   \caption{Multilevel user and development hierarchy of Nauticle.}
   \label{fig:three_levels}
 \end{figure}
-This section focuses on the purely user level, where no programming knowledge but the application of XML forms is required. The core level is out of scope of this guide, nevertheless, the second, intermediate user and developer level is introduced in section \ref{sec:interface}. 
+This section focuses on the pure user level, where no programming knowledge but the application of XML forms is required. The core level is out of the scope of this guide, nevertheless, the second, intermediate user and developer level is introduced in section \ref{sec:interface}. 
 \subsection{Simulation workflow} \label{sec:sim_workflow}
-To define and simulate a problem a form (XML-document) is needed to be passed to the solver. The form contains all the required information about the physical model called case. In this section the structure of the form is discussed through the introduction of the workspace and the user-defined equations.
+To define and simulate a problem, a \textit{form} (XML-document) is needed to be passed to the solver. The form contains all the required information about the physical model called \textit{case}. In this section, the structure of the form is discussed through the introduction of the workspace and the user-defined equations.
 \subsubsection{Definitions}
-\textbf{Workspace}: A collection of user-defined symbols like constants, variables, fields and particle system representing the quantities of the physical model.
+\textbf{Workspace}: A collection of user-defined symbols like constants, variables, fields, and particle system representing the quantities of the physical model.
 
 \textbf{User-defined equation (UDE)}: Equation, built up using the nodes of the expression tree and the objects stored in the workspace. The evaluation of an equation means the assignment of the RHS solution to the LHS. Consequently the LHS should be a variable, field or particle system. Each UDE has a condition with a default value "true" that determines if the equation has to be solved or not. The condition may have particle-dependent value.
 
@@ -923,20 +934,20 @@ To define and simulate a problem a form (XML-document) is needed to be passed to
   \label{fig:workflow}
 \end{figure}
 
-The schematic diagram of a simulation is presented in Figure \ref{fig:workflow}. After the parsing of the input files on the left, the case assembler builds the case, which is handled by the simulation scheduler. The latter is responsible for the calculation flow and parallelisation. The result files are saved by the VTK-writer governed by the case manager. 
+The schematic diagram of a simulation is presented in Figure \ref{fig:workflow}. After the parsing of the input files on the left, the case assembler builds the case, which is handled by the simulation scheduler. The latter is responsible for the calculation flow and parallelization. The result files are saved by the VTK-writer governed by the case manager. 
 As soon as the simulation scheduler sends a step request, the solution of the UDE's is carried out by the case itself. The change of the value of any symbol contained by the workspace during the solution is automatically updated. Optionally, any of the result files can be applied as initial conditions for a further simulation (see Section \ref{sec:XML}).
 
 \subsection{Input/Output file formats}
 During the execution of a simulation, Nauticle works with four types of input and output files. Some of these files are fundamental, the others are optional. The subsequent sections introduce these file types more or less in the order of importance.
 \subsubsection{XML-document} \label{sec:XML}
-The XML-document is the most important and fundamental input file of any simulation executed by Nauticle. No simulation can be executed in absense of the configuration XML-file. Nevertheless, they can be distinguished by the data they contain. The most important advantage of the application of XML-files is that they support random access to the stored data, therefore the user is not required to follow strict rules during the construction of the simulation problem.\\
+The XML-document is the most important and fundamental input file of any simulation executed by Nauticle. No simulation can be executed in absence of the configuration XML-file. Nevertheless, they can be distinguished by the data they contain. The most important advantage of the application of XML-files is that they support random access to the stored data, therefore the user is not required to follow strict rules during the construction of the simulation problem.\\
 \begin{figure}[H]
   \includegraphics[scale=1.05]{xml_intro.pdf}
   \centering
   \caption{Structure of the XML-document.}
   \label{fig:xml_intro}
 \end{figure}\vspace*{3pt}
-A simple document is presented in Figure \ref{fig:xml_intro}, in which the whole workspace and list of equations to be passed to the solver are defined and no external sources are used except for the nodal coordinates (which is optional). Note that the domain boundaries are defined by the number of cells being integral along each axis. Another way of problem initialisation is the application of a former simulation result stored in VTK file. Despite of that, XML-documents cannot be omitted, but are used to refer to the desired input file. This type of initialisation allows a significantly simpler XML-document as it is illustrated in Figure \ref{fig:xml_intro_simple}.
+A simple document is presented in Figure \ref{fig:xml_intro}, in which the whole workspace and the list of equations to be passed to the solver are defined and no external sources are used except for the nodal coordinates (which is optional). Note that the domain boundaries are defined by the number of cells being integral along each axis. Another way of problem initialization is the application of a former simulation result stored in VTK file. Despite that, XML-documents cannot be omitted, but are used to refer to the desired input file. This type of initialization allows a significantly simpler XML-document as it is illustrated in Figure \ref{fig:xml_intro_simple}.
 \begin{figure}[H]
   \includegraphics[scale=1]{xml_intro_simple.pdf}
   \centering
@@ -971,12 +982,12 @@ eq3:dt=(C3-C2)#gt(F1,C3)
 \end{lstlisting}
 The character "\#" marks the solution condition for each UDE.
 \subsubsection{VTK-document}
-VTK is a general purpose library for visualisation and storage of arbitrary geometry. To store simulation results, VTK formatted ASCII or binary files are used.
+VTK is a general purpose library for visualization and storage of arbitrary geometry. To store simulation results, VTK formatted ASCII or binary files are used.
 \myparagraph{Simple Legacy Formats}
 The legacy VTK file formats consist of five basic parts \cite{VTK_format}.
 \begin{itemize}
 \item 1. The first part is the file version and identifier. This part contains the single line: \# vtk DataFile Version x.x. This line must be exactly as shown with the exception of the version number x.x, which will vary with different releases of VTK. (Note: Nauticle supports version 4.0) 
-\item 2. The second part is the header. The header consists of a character string terminated by end-of-line character. The header is 256 characters maximum. The header can be used to describe the data and include any other pertinent information. 
+\item 2. The second part is the header. The header consists of a character string terminated by end-of-line character. The header is 256 characters maximum. The header can be used to describe the data and includes any other pertinent information. 
 \item 3. The next part is the file format. The file format describes the type of file, either ASCII or binary. On this line the single word ASCII or BINARY must appear. 
 \item 4. The fourth part is the dataset structure. The geometry part describes the geometry and topology of the dataset. This part begins with a line containing the keyword DATASET followed by a keyword describing the type of dataset. Then, depending upon the type of dataset, other keyword/ data combinations define the actual data.
 \item 5. The final part describes the dataset attributes. This part begins with the keywords POINT\_DATA or CELL\_DATA, followed by an integer number specifying the number of points or cells, respectively. (It doesn't matter whether POINT\_DATA or CELL\_DATA comes first.) Other keyword/ data combinations then define the actual dataset attribute values (i.e. scalars, vectors, tensors, normals, texture coordinates, or field data). 
@@ -1049,11 +1060,9 @@ $condition$ & \\
 \end{table}
 
 \section{The Nauticle interface} \label{sec:interface}
-This section describes the main aspects of the Nauticle interface aiming the constitution of a truly flexible particle based numerical simulation tool.
+This section describes the main aspects of the Nauticle interface aiming the constitution of a truly flexible particle-based numerical simulation tool.
 \subsection{Overview}
-Observing the nature it often seems to be evident that the instantaneous motion or state of an object is governed by its immediate vicinity, while the effects of distant objects are negligible. Such behavior can be noticed in case of phenomena like the motion of granular material, the flow of a crowd in a building or on the streets, or even in case of the motion of material parcels involved in solid or fluid domains. Moreover, the motion of celestial object can also be considered in the same manner. 
-However, the radius of influence can obviously differ tremendously based on the physical problem leading to --- at least in some cases --- infinite radii covering infinite domains.
-Nevertheless, from physical point of view, the object of interest could be a portion of a continuum substance or a physically existing granular particle, the interpretation of interparticle forces or interaction laws seems to be similar. To be more specific, if a quantity $\Phi_i$ of particle $i$ can be calculated as
+Observing nature it often seems to be evident that the instantaneous motion or state of an object is governed by its immediate vicinity, while the effects of distant objects are negligible. This is a natural presumption for phenomena like the motion of granular material, the flow of a crowd in a building or on the streets, or even in case of the motion of material parcels involved in solid or fluid domains. Moreover, the motion of a celestial object can also be considered in the same manner. However, it is obvious that the radius of influence can be tremendously vary depending on the physical problem leading to --- at least in some cases --- infinite radii covering infinite domains. Nevertheless, from the physical point of view, the object of interest could be a portion of a continuum substance or a physically existing granular particle, the interpretation of interparticle forces or interaction laws seems to be similar. To be more specific, if a quantity $\Phi_i$ of particle $i$ can be calculated as
 \begin{flalign} \label{eq:interaction_general}
 \Phi_i = \sum_j{I_{ij}},
 \end{flalign}
@@ -1061,20 +1070,20 @@ we can say that $I_{ij}$ is an interaction operator, a function of any quantitie
 \begin{figure}[H]
   \includegraphics[scale=0.7]{interaction_explain.pdf}
   \centering
-  \caption{Explanation of interaction between nearby objects. a.: a solar system, b.: crowd motion, c.: granular material, d.: continuum substance.}
+  \caption{Explanation of the interaction between nearby objects. a.: a solar system, b.: crowd motion, c.: granular material, d.: continuum substance.}
   \label{fig:interaction_explain}
 \end{figure}
-The design of Nauticle aims the goal of flexible adoptation and application of arbitrary interaction laws over a set of spatially distributed particles.
+The design of Nauticle aims flexible adoption and application of arbitrary interaction laws over a set of spatially distributed particles.
 
 
-The subsequent sections present how Nauticle subserves the application of particle based methods.
+The subsequent sections present how Nauticle subserves the application of particle-based methods.
 
-\subsection{Adoptation of interaction laws}
+\subsection{Adoption of interaction laws}
 While in Section \ref{sec:usage_of_nauticle} the usage of Nauticle is described, this section specifies how to adopt a new interaction scheme (hereinafter method) formerly not implemented in Nauticle. Since it is inevitable to modify the code, Nauticle requires recompilation to be extended with new methods.
 
-For the better understanding, the implementation process is divided into the steps below, illustrated by the adoptation of a user-defined interaction named \textbf{USER\_METHOD}. Here we assume that \textbf{USER\_METHOD} operator has two operands and later it should be referred as \textit{user\_method(operand1, operand2)} in the XML-configuration file.
+For a better understanding, the implementation process is divided into the steps below, illustrated by the adoption of a user-defined interaction named \textbf{USER\_METHOD}. Here we assume that \textbf{USER\_METHOD} operator has two operands and later it should be referred as \textit{user\_method(operand1, operand2)} in the XML-configuration file.
 
-\textbf{Step 1: Definition of a child to the interaction class (\textbf{pmInteraction}).} \\
+\textbf{Step 1: Definition of a child of the interaction class (\textbf{pmInteraction}).} \\
 The minimal example of the \textbf{USER\_METHOD} class reads as:
 \begin{example}{Class definition}{}
 \lstset{basicstyle=\tiny}
@@ -1129,13 +1138,13 @@ The key member function of the class is the \textit{evaluate} method:
   }
 \end{lstlisting}
 \end{example}
-which is responsible for the evaluation of \textit{user\_method(operand1, operand2)} through the summation of the neighboring particles. The lambda function --- considered to be the core of the interaction --- determines a single interaction between the particle of interest denoted by $i$ and a neighboring particle $j$. There are further issues considering other methods to be defined like constructors, clone functions and a printer function. Since these methods are more or less straightforward based on other adoptations, this guide does not specify them in detail. It is strongly recommended to follow the convention of Nauticle and place the header file (either directly or in a subfolder) into the Nauticle \textit{include} directory and a source file if any, to the \textit{src} folder.
+which is responsible for the evaluation of \textit{user\_method(operand1, operand2)} through the summation of the neighboring particles. The lambda function --- considered to be the core of the interaction --- determines a single interaction between the particle of interest denoted by $i$ and a neighboring particle $j$. There are further supplementary methods to be defined such as constructors, clone functions, and the printer function. Since their definition is straightforward based on the available adoptions, this guide does not specify them in detail. It is strongly recommended to follow the convention of Nauticle and place the header file (either directly or in a subfolder) into the Nauticle \textit{include} directory and a source file if any, to the \textit{src} folder.
 
 \textbf{Step 2: Registration of the \textit{user\_method} function name in the expression parser of Nauticle.} \\
 The list of function names (\textbf{list\_of\_functions}) in \textbf{pmMath\_test.cpp} holds the complete collection of functions that can be interpeted by the expression parser. One needs to simply extend the list by the desired function name, in this case \textit{user\_method}. It is also required to manually change the list size in the same file as well as in the class definition of \textbf{pmMath\_test}.
 
 \textbf{Step 3: Extend the expression parser.} \\
-To let the expression parser build the tree of expressions including \textit{user\_method}, the \textbf{pmExpression\_parser.cpp} is required to be extended be the declaration of the desired node. This is shown in detail below:
+To let the expression parser build the tree of expressions including \textit{user\_method}, the \textbf{pmExpression\_parser.cpp} is required to be extended by the declaration of the desired node. This is shown in detail below:
 \begin{example}{Declaration of \textbf{USER\_METHOD} node}{}
 \lstset{basicstyle=\tiny}
 \begin{lstlisting}[language=c++]
@@ -1152,7 +1161,7 @@ To let the expression parser build the tree of expressions including \textit{use
   // ...
 \end{lstlisting}
 \end{example}
-where the operands array size is identical with the number of operands of \textit{user\_method}.
+where the array size is identical with the number of operands of \textit{user\_method}.
 
 \textbf{Step 4: Rebuild the executable.} \\
 Assuming that the definition of the \textbf{USER\_METHOD} class is placed in a separate source file, the Makefile becomes expired and requires a regeneration by cmake in the main Nauticle directory. After that, Nauticle can be compiled and built executing the command 'make' in the same directory:
@@ -1174,13 +1183,13 @@ After performing the four steps above, Nauticle becomes suitable for the applica
 \end{lstlisting}
 \end{example}
 
-Note: some of the schemes may require further mutual members, such as kernel functions, in case of schemes like SPH. To avoid the repeated declarations of filter functions, a \textbf{pmFilter} class is already implemented in the Nauticle expression tree.
+Note: some of the schemes may require further mutual members, such as kernel functions, in case of schemes like SPH. To avoid repeated declarations of filter functions, a \textbf{pmFilter} class is already implemented in the Nauticle expression tree.
 
 
 \section{Installation}
-Since the Nauticle package currently does not provide pre-built version, the user is required to build the binaries directly from source code enclosed in the package. manually or by means of the automated installation process.
+Since the Nauticle package currently does not provide a pre-built version, the user is required to build the binaries directly from source code enclosed in the package manually or by means of the automated installation process.
 \subsection{Requirements}
-Currently the installation process does not support Windows, it works only on Linux (distributions that support Application Package Tool (APT)) and Mac OSX systems. Hereinafter Linux is considered to support APT.
+Currently, the installation process does not support Windows, it works only on Linux (distributions that support Advanced Packaging Tool (APT)) and Mac OSX systems. Hereinafter Linux is considered to support APT.
 Nauticle requires a few dependencies and requirements to be installed. These are the following:
 \begin{itemize}
   \item cmake (at least version 3.5) (\myhref{https://cmake.org/download/}{https://cmake.org/download/}),
@@ -1191,9 +1200,9 @@ Nauticle requires a few dependencies and requirements to be installed. These are
 \end{itemize}
 The details of the required dependencies are not discussed here, please follow the links to find more information about the listed packages. Further dependencies could be required by the Visualization Toolkit.
 
-During the installation process it is assumed that the user has internet connection and root privileges in the operating system (super user). Throughout the following subsection the automatic installation procedure is discussed in detail.
-Note: to avoid any version conflicts it could be preferable to install and build Nauticle with its dependencies using HashDist, which is an environment management system (\myhref{https://github.com/hashdist/hashdist}{https://github.com/hashdist/ hashdist}). However it is not mandatory and the automated installation process does not apply any environment manager. \\
-Except for the VTK library, all header and binary files related to the dependencies are required to be copied into the /usr/local/include/<dependency> and /usr/local/lib/<dependency> directories in case of both Linux and Mac systems. VTK libary should be places into the directory /usr/local/VTK.7.0.0 and built simply by following the instructions of the VTK Documentation. Obviously, to compile and build Nauticle, all its dependencies are required to be completely installed in the proper directories. 
+During the installation process, it is assumed that the user has internet connection and root privileges (super user). Throughout the following subsection, the automatic installation procedure is discussed in detail.
+Note: to avoid any version conflicts it is preferred to install and build Nauticle with its dependencies using HashDist, which is an environment management system (\myhref{https://github.com/hashdist/hashdist}{https://github.com/hashdist/ hashdist}). However, it is not mandatory and the automated installation process does not apply any environment manager. \\
+Except for the VTK library, all header and binary files related to the dependencies are required to be copied into the /usr/local/include/<dependency> and /usr/local/lib/<dependency> directories in case of both Linux and Mac systems. VTK libary should be placed into the directory /usr/local/VTK.7.0.0 and built simply by following the instructions of the VTK Documentation. Obviously, to compile and build Nauticle, all its dependencies are required to be completely installed in the proper directories. 
 \subsection{Automated installation}
 Although it is possible to install and build the dependencies and Nauticle manually, it is recommended to use the installation shell script arriving with Nauticle. The script installs the whole package including the dependencies by typing the command
 \begin{lstlisting}[language=bash]
@@ -1207,11 +1216,11 @@ in terminal after changing directory to the desired folder. The content of the s
 #!/bin/sh
 
 # Versions of nauticle and its dependencies
-NAUTICLE_version="1.0.170720"
+NAUTICLE_version="1.0.170815"
 VTK_version="7.0.0"
-CU_VERSION="1.0.170720"
-PL_version="1.0.170720"
-HX_version="1.0.170720"
+CU_VERSION="1.0.170815"
+PL_version="1.0.170815"
+HX_version="1.0.170815"
 
 # Set current directory to install directory.
 INSTALL_DIR=$PWD
@@ -1225,11 +1234,15 @@ if [ "$(uname)" = "Darwin" ]; then
     brew install cmake
     OS="Mac"
 elif [ $OS = "Linux" ]; then
-# if linux, install opengl and cmake
+  # if linux, install opengl and cmake
+  if [ "$(command -v apt-get)" ]; then
     sudo apt-get update
-  sudo apt-get --yes --force-yes install build-essential
-  sudo apt-get --yes --force-yes install freeglut3-dev
-  sudo apt-get --yes --force-yes install cmake
+    sudo apt-get --yes --force-yes install build-essential
+    sudo apt-get --yes --force-yes install freeglut3-dev
+    sudo apt-get --yes --force-yes install cmake
+  else
+    echo "OS is not supported. Try to install dependencies manually."
+  fi
 fi
 
 # Install proper version of VTK library
@@ -1245,51 +1258,35 @@ cd $INSTALL_DIR
 # Download and unzip the required packages
 # Common utils
 PCKG_CU=commonutils_$CU_VERSION.zip
-wget https://bitbucket.org/BalazsToth/commonutils/downloads/$PCKG_CU
-sudo unzip $PCKG_CU
-sudo chmod -R 777 commonutils
-rm $PCKG_CU
-# Prolog
 PCKG_PL=prolog_$PL_version.zip
-wget https://bitbucket.org/BalazsToth/prolog/downloads/$PCKG_PL
-sudo unzip $PCKG_PL
-sudo chmod -R 777 prolog
-rm $PCKG_PL
-# HandyXML
 PCKG_HX=handyxml_$HX_version.zip
-wget https://bitbucket.org/BalazsToth/handyxml/downloads/handyxml_$HX_version.zip
-sudo unzip $PCKG_HX
-sudo chmod -R 777 handyxml
-rm $PCKG_HX
-# nauticle
 PCKG_NA=nauticle_$NAUTICLE_version.zip
+wget https://bitbucket.org/BalazsToth/commonutils/downloads/$PCKG_CU
+wget https://bitbucket.org/BalazsToth/prolog/downloads/$PCKG_PL
+wget https://bitbucket.org/BalazsToth/handyxml/downloads/$PCKG_HX
 wget https://bitbucket.org/nauticleproject/nauticle/downloads/$PCKG_NA
+sudo unzip $PCKG_CU
+sudo unzip $PCKG_PL
+sudo unzip $PCKG_HX
 sudo unzip $PCKG_NA
-sudo chmod -R 777 nauticle
-rm $PCKG_NA
+sudo chmod -R 777 commonutils prolog handyxml nauticle
 
 # Install the dependencies and the nauticle executable (nauticle) itself
-cd commonutils
-sudo cmake .
+cd $INSTALL_DIR/commonutils
 sudo cmake .
 sudo make install
-cd ..
  
-cd prolog
-sudo cmake .
+cd $INSTALL_DIR/prolog
 sudo cmake .
 sudo make install
-cd ..
  
-cd handyxml
-sudo cmake .
+cd $INSTALL_DIR/handyxml
 sudo cmake .
 sudo make install
-cd ..
 
 # Set directory name for executable
 BIN_DIR="${INSTALL_DIR}/nauticle/bin/$OS"
-cd nauticle
+cd $INSTALL_DIR/nauticle
 sudo cmake .
 sudo cmake .
 sudo mkdir $BIN_DIR
@@ -1313,11 +1310,27 @@ sudo chmod 777 start.sh
 printf "#!/bin/sh\nshift\nexecutable=$BIN_DIR/nauticle\n" >> start.sh
 printf "sudo \$executable \"\$@\"" >> start.sh
 
+# Purge temparay files
+while true; do
+  read -p "Do you wish to delete temporary files?" yn
+    case $yn in
+        [Yy]* ) cd $INSTALL_DIR
+          sudo rm -r commonutils prolog handyxml
+          sudo rm $PCKG_CU $PCKG_PL $PCKG_HX $PCKG_NA VTK-$VTK_version.zip
+          mv $BIN_DIR/nauticle $INSTALL_DIR/tmp
+          rm -rf nauticle
+          mkdir -p "$BIN_DIR"
+          mv $INSTALL_DIR/tmp $BIN_DIR/nauticle
+          break;;
+        [Nn]* ) exit;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
 \end{lstlisting}
 \end{example}
 
-It downloads and builds the necessary files in your system. After installation, the executable (\execname{}) will be placed in the bin directory and the \textbf{start.sh} file will be generated in the installation directory. The installer also adds the bin directory to your environment variables, therefore you can run it from different directories by simply typing \textbf{nauticle} in terminal. To activate this feature it may be necessary to manually reload the \textbf{.bash\_profile} or \textbf{.bashrc} file in your home directory using the \texttt{source} command.
-In certain cases, when environment variables are not available you can perform computations using the \textbf{start.sh} file in the simulation folder:
+It downloads and builds the necessary files into your system. After installation, the executable (\execname{}) is placed in the bin directory and the \textbf{start.sh} file is generated in the installation directory. The installer also adds the bin directory to your environment variables, therefore you can run Nauticle from different directories by simply typing \textbf{nauticle} in terminal. To activate this feature it may be necessary to manually reload the \textbf{.bash\_profile} or \textbf{.bashrc} file in your home directory using the \texttt{source} command.
+In certain cases, when the environment variables are not available you can perform computations using the \textbf{start.sh} file in the simulation folder:
 \begin{lstlisting}[language=bash]
   $ sh start.sh
 \end{lstlisting}
@@ -1325,7 +1338,7 @@ Note that the optional runtime commands are forwarded by \textbf{start.sh}, whic
 \begin{lstlisting}[language=bash]
   $ sh start.sh <arguments_list>
 \end{lstlisting}
-where the arguments\_list consists of the option listed in Table \ref{tbl:runtime_commands}.
+where the arguments\_list consists of the options listed in Table \ref{tbl:runtime_commands}.
 
 
 
@@ -1337,12 +1350,12 @@ where the arguments\_list consists of the option listed in Table \ref{tbl:runtim
 
 
 \section{Examples} \label{sec:examples}
-This section describes a few examples of the application of the Nauticle solver to more or less simple physical models governed by partial and ordinary differential equations. The examples are selected to cover a wide range of applications from both physical and mathematical point of view.
+This section describes a few examples of the application of the Nauticle solver to more or less simple physical models governed by partial or ordinary differential equations. The examples are selected to cover a wide range of applications from both physical and mathematical point of view.
 
-Note that the solutions presented in this section might have further different, but also correct realisations.
+Note that the solutions presented in this section might have further different, but also correct realizations.
 \subsection{Couette-flow}
 \subsubsection{Problem definition}
-One of the simplest and most frequently investigated fundamental test case in fluid mechanics is the laminar Couette-flow. The upper one of the two infinite sized parallel walls shown in Figure \ref{fig:couette} is moving in $y$ direction with velocity $v=1$m/s.
+One of the simplest and most frequently investigated fundamental test cases in fluid mechanics is the laminar Couette-flow. The upper one of the two infinite sized parallel walls shown in Figure \ref{fig:couette} is moving in $y$ direction with velocity $v=1$m/s.
 \begin{figure}[H]
   \includegraphics[scale=0.7]{couette.pdf}
   \centering
@@ -1365,10 +1378,10 @@ where $v$ is the fluid velocity field. The problem is stationary and one-dimensi
 \begin{flalign} \label{eq:couette_simplified}
 \begin{split}
 &\frac{d^2T}{dx^2}=0, \\
-&\frac{d}{dx}\bigg(\nu(T)\frac{dv}{dx}\bigg)=0,
+&\frac{d}{dx}\bigg(\nu(T)\frac{dv}{dx}\bigg)=0.
 \end{split}
 \end{flalign}
-Applying Dirichlet boundary conditions for both the temperature and velocity fields:
+Applying Dirichlet boundary conditions to both the temperature and velocity fields:
 \begin{flalign} \label{eq:couette_bc}
 \begin{split}
 &T(-L/2)=0,\\
@@ -1386,7 +1399,7 @@ where $L=1$m is the width of the channel, the solution of \equref{eq:couette_sim
 \end{flalign}
 
 \subsubsection{Numerical model and results}
-To solve the Couette-flow problem the simplest model is built in Nauticle using the SPH collocation scheme. Although SPH is Lagrangian (particles should follow material trajectories), in the case of laminar parallel flow, the movement of particles can be omitted due to the identity of the Lagrangian and Eulerian fields. The time dependent discretized system of equations are
+To solve the Couette-flow problem the simplest model is built in Nauticle using the SPH collocation scheme. Although SPH is Lagrangian (particles should follow material trajectories), in the case of laminar parallel flow, the movement of particles can be omitted due to the identity of the Lagrangian and Eulerian fields. The time dependent discretized system of equations is
 \begin{flalign} \label{eq:couette_sph_discretized}
 \begin{split}
 &\frac{dT_i}{dt}=\lambda\sum_j{2(T_j-T_i)\frac{1}{\textbf{r}_{ji}}\frac{m_j}{\rho_j}\nabla W_{ij}}, \\
@@ -1474,7 +1487,7 @@ After the discretization the XML-document can be constructed:
 </simulation>
 \end{lstlisting}
 \end{example}
-Since the initial conditions of both the temperature and velocity are uniform, the solution of the discretized equations needs to be repeated until the result is sufficiently formed. In this case the simulated time is $100$ s. The final result is compared with the analytical solution in Figure \ref{fig:couette_results}.
+Since the initial conditions for both the temperature and velocity are uniform, the solution of the discretized equations needs to be repeated until the result is sufficiently formed. In this case the simulated time is $100$ s. The final result is compared with the analytical solution in Figure \ref{fig:couette_results}.
 \begin{figure}[H]
   \includegraphics[scale=0.4]{couette_result.pdf}
   \centering
@@ -1485,7 +1498,7 @@ Since the initial conditions of both the temperature and velocity are uniform, t
 The results show very good agreement with the analytical solution in case of both the linear temperature and the exponential velocity distributions.
 \subsection{Phase separation on a sphere}
 \subsubsection{Problem definition}
-The process of separation of two phases is usually modelled by the fourth order nonlinear Cahn-Hilliard equation
+The process of the separation of two phases is usually modelled by the fourth order nonlinear Cahn-Hilliard equation
 \begin{flalign} \label{eq:cahnhilliard}
 \begin{split}
 &\frac{\partial c}{\partial t}=D\Delta \mu,\\
@@ -1495,7 +1508,7 @@ The process of separation of two phases is usually modelled by the fourth order 
 where $c\in[-1,1]$ is the phase concentration, $\mu$ is the chemical potential, $\sqrt{\gamma}$ is the thickness of the transition region between the two phases and $D$ is a diffusion coefficient. In this particluar case the solution of equation \equref{eq:cahnhilliard} is investigated over a surface of a sphere.
 
 \subsubsection{Numerical model and results}
-The numerical scheme to discretize the system \equref{eq:cahnhilliard} is chosen to be SPH. Since the geometry is generated in Cartesian coordinates, the domain itself is three dimensional. However, the mollifier in the spatial interpolant should be two dimensional due to the interpretation of the problem on the spherical surface. The discretized form of the equations \equref{eq:cahnhilliard} are
+The numerical scheme to discretize the system \equref{eq:cahnhilliard} is chosen to be SPH. Since the geometry is generated in Cartesian coordinates, the domain itself is three-dimensional. However, the mollifier in the spatial interpolant should be two-dimensional due to the fact, that the problem is interpreted on a spherical surface. The discretized form of the equations \equref{eq:cahnhilliard} are
 \begin{flalign} \label{eq:cahnhilliard_sph_discretized}
 \begin{split}
 &\frac{\partial c_i}{\partial t}=D\sum_j{2(\mu_j-\mu_i)\frac{m_j}{\rho_j}\nabla W_{ij}},\\
@@ -1572,9 +1585,9 @@ The phase separation process has a decaying intensity in the function of time, t
 
 
 \subsection{Particle damper}
-Particle dampers are one of the widely investigated damper systems today. Although there exists several analytical models to design and scale a particle damper, the complexity of the problem still requires experimental and numerical investigation. The geometry of the tank, the number and sizes of particles, the materials, the operating frequency are only some of the huge amount of possibilities concerning the development of particle dampers.
+Particle dampers are one of the widely investigated damper systems today. Although there exist several analytical models to design and scale a particle damper, the complexity of the problem still requires experimental and numerical investigation. The geometry of the tank, the number, and sizes of particles, the materials, the operating frequency are only some of the huge amount of possibilities concerning the development of particle dampers.
 \subsubsection{Problem definition}
-This test case simulates a simple three-dimensional oscillating cubic tank filled with spheres of identical radii. The tank is initially at rest in the position $z_0=-0.05$ m. The layout of the particle damper is presented in Figure \ref{fig:particle_damper_geom}, furthermore the values of the introduced quantities are summarized in Table \ref{tbl:particle_damper_values}. The system is supported by the ideal linear spring  merely damped by the collision of the included set of spheres.
+This test case simulates a simple three-dimensional oscillating cubic tank filled with spheres of identical radii. The tank is initially at rest in the position $z_0=-0.05$ m. The layout of the particle damper is presented in Figure \ref{fig:particle_damper_geom}, furthermore the values of the introduced quantities are summarized in Table \ref{tbl:particle_damper_values}. The system is supported by the ideal linear spring merely damped by the collision of the included set of spheres.
 \begin{figure}[H]
   \includegraphics[scale=0.4]{particle_damper_geom.pdf}
   \centering
@@ -1614,7 +1627,7 @@ where $F(t)$ is the resultant of the particle-boundary forces $f^b_i$. The latte
 \end{flalign}
 where $\textbf{F}^c$ and $\textbf{F}^b$ are the particle-particle and particle-wall collision forces respectively.
 \subsubsection{Numerical model and results}
-A simple representaion of the three-dimensional physical model is introduced in this section with the notation that other valid solutions are also possible. To simplify the model and lacking the tank the simulation domain is chosen to be the interior of the tank. Since the domain is fixed, this assumption means that the simulation of the particle motion and collision is interpreted in the moving coordinate system associated to the tank and the excitation of the particles is governed purely by a time-dependent acceleration field superposed with the gravitational acceleration. The boundaries of the domain are set to symmetric, which plays an important role in the calculation of the forces acting on the tank. For the sake of simplicity the angular momentum of the particles is neglected. The solution of the homogeneous part of \equref{tank_ode} is the harmonic function
+A simple representaion of the three-dimensional physical model is introduced in this section with the notation that other valid solutions are also possible. To simplify the model and omit the tank the simulation domain is chosen to be the interior of the tank. Since the domain is fixed, this assumption means that the simulation of the particle motion and collision is interpreted in the moving coordinate system associated to the tank and the excitation of the particles is governed purely by a time-dependent acceleration field superposed with the gravitational acceleration. The boundaries of the domain are set to be symmetric, which plays an important role in the calculation of the forces acting on the tank. For the sake of simplicity the angular momentum of the particles is neglected. The solution of the homogeneous part of \equref{eq:tank_ode} is the harmonic function
 \begin{flalign} \label{eq:tank_sol}
 Z(t)=C_1sin(\gamma t)+C_2cos(\gamma t),
 \end{flalign}
@@ -1623,7 +1636,7 @@ where $C_1$ and $C_2$ are constants depending on the initial conditions and $\ga
 \frac{d^2\textbf{r}_i}{dt^2}=\frac{\textbf{F}^c_i}{m_i}+\frac{\textbf{F}^b_i}{m_i}+\textbf{g}=\frac{1}{m_i}\sum_j{\textbf{f}^c_i(\textbf{r}_{ji},v_{ji},...)}+\frac{\textbf{F}^b_i}{m_i}+\textbf{g},
 \end{flalign}
 where $f^c$ denotes the collection of the collision laws introduced in Section \ref{sec:DEM_intro}. The second term on the RHS of \equref{eq:spheres_ode} operates with the same collision laws at the symmetric boundaries, which in turn contributes to \equref{eq:tank_ode}.
-During the simulation the tank position, velocity and acceleration has to be calculated at each time steps. These quantities are considered as variables and calculated by the numerical solution of \equref{tank_ode}. The configuration file for the particle damper problem is as follows:
+During the simulation the tank position, velocity and acceleration has to be calculated at each time steps. These quantities are considered as variables and calculated by the numerical solution of \equref{eq:tank_ode}. The configuration file for the particle damper problem is as follows:
 \begin{example}{Particle damper configuration file}{}
 \lstset{basicstyle=\tiny}
 \begin{lstlisting}[language=XML]
@@ -1691,14 +1704,14 @@ During the simulation the tank position, velocity and acceleration has to be cal
 </simulation>
 \end{lstlisting}
 \end{example}
-After running the configuration file in Nauticle the individual particle elevation are visualized in Figure \ref{fig:particle_damper_result} together with the bottom and top positions of the tank.
+After running the configuration file in Nauticle the individual particle elevations are visualized in Figure \ref{fig:particle_damper_result} together with the bottom and top positions of the tank.
 \begin{figure}[H]
   \includegraphics[scale=0.6]{particle_damper_time_series.pdf}
   \centering
   \caption{Elevation of particles (red) and the tank (black) in the function of time.}
   \label{fig:particle_damper_result}
 \end{figure}\vspace*{3pt}
-As it is seen the oscillation amplitude is being reduced significantly until the particles start to gather at the bottom due to the smaller peak acceleration.
+As it can be seen the oscillation amplitude is being reduced significantly until the particles start to gather at the bottom due to the smaller peak acceleration.
 
 
 \subsection{Breaking of free jet} \label{sec:DVM_example}
@@ -1707,16 +1720,16 @@ This section provides a simple test case of the break of two-dimensional paralle
 \begin{flalign} \label{eq:vorticity_constant}
 \frac{d\omega}{dt}=\frac{\partial\omega}{\partial t}+\textbf{v}\nabla\omega=0.
 \end{flalign}
-Due to its mathematical background, the fulfillment of constraint \equref{eq:vorticity_constant} is simply feasible by the Discrete Vortex Method presented in \ref{sec:DVM}.
+Due to its mathematical background, the fulfillment of constraint \equref{eq:vorticity_constant} is simply feasible using the Discrete Vortex Method presented in \ref{sec:DVM}.
 \subsubsection{Numerical model and results}
 The shear layer on the edges of the free jet are resolved by a set of point vortices with opposite signs along the two edges as drawn in Figure \ref{fig:shear_geom}.
 \begin{figure}[H]
   \includegraphics[scale=0.6]{shear_geom.pdf}
   \centering
-  \caption{Free jet (dark blue) represented by a series of point vortices along the shear layers. Yellow dots mark the tracer partciels. }
+  \caption{Free jet (dark blue) represented by a series of point vortices along the shear layers. Yellow dots mark the tracer particles. }
   \label{fig:shear_geom}
 \end{figure}\vspace*{3pt}
-Since the free jet is assumed to be infinite, a periodic boundary has been chosen in streamwise direction to simulate a $L=5$ m long section of the jet. Obviously the simulated length affects the maximum size of the developing flow structures. The length $5$ m and the number of vortex points are sufficiently large to resolve the process of jet-breaking. To capture the actual phyisical instability it is inevitable to apply a small initial perturbation of the vortex positions. Such a perturbation could be a sinusoidal shift in spanwise direction with a small amplitude $10^{-6}$ m and wavelength $L/5$ m.
+Since the free jet is assumed to be infinite, a periodic boundary has been chosen in streamwise direction to simulate a $L=5$ m long section of the jet. Obviously, the simulated length affects the maximum size of the developing flow structures. The length $5$ m and the number of vortex points are sufficiently large to resolve the process of jet-breaking. To capture the actual physical instability it is inevitable to apply a small initial perturbation on the vortex positions. Such a perturbation could be a sinusoidal shift in spanwise direction with a small amplitude $10^{-6}$ m and wavelength $L/5$ m.
 
 \begin{figure}[H]
   \includegraphics[scale=0.6]{shear_result.pdf}
@@ -1735,7 +1748,7 @@ Since the free jet is assumed to be infinite, a periodic boundary has been chose
 $L$ & Simulated length of the jet & $5$ m \\
 $\omega_i$ & Vorticity strength of each point vortex & $0.3$ 1/s \\
 $d$ & Width of the jet & $0.6$ m \\
-$\Delta x$ & distance between adjacent vortices & $0.05$ m \\
+$\Delta x$ & Distance between adjacent vortices & $0.05$ m \\
 $N_v$ & Number of point vortices & $200$ \\
 $N_t$ & Number of tracer particles & $250$ \\
 \bottomrule[1.25pt]
@@ -1836,7 +1849,7 @@ Time & at & $86400$ s \\
 \end{tabular}
 \end{center}
 \end{table}
-Hence the gravitational constant is obtained as $\gamma=9.16324149\cdot 10^{-10}\rm{al}^3/(\rm{am}\cdot \rm{at}^2)$. Following \cite{Arminjon2002}, the initial conditions of the Solar System is set to its state at 26 February 2000 00:00 (in heliocentric coordinates) introduced in Table \ref{tbl:solarsystempos} and \ref{tbl:solarsystemvel}. 
+Hence the gravitational constant is obtained as $\gamma=9.16324149\cdot 10^{-10}\rm{al}^3/(\rm{am}\cdot \rm{at}^2)$. Following \cite{Arminjon2002}, the initial conditions of the Solar System are set to its state at 26 February 2000 00:00 (in heliocentric coordinates) introduced in Table \ref{tbl:solarsystempos} and \ref{tbl:solarsystemvel}. 
 \begin{table} [H]
 \begin{center}
 \caption{Mass of the Solar System planets.}\label{tbl:solarsystemmass}
@@ -1922,8 +1935,8 @@ The simulation can be run using the configuration file below:
 \end{lstlisting}
 \end{example}
 \end{samepage}
-Instead of the definition of the particle positions in the configuration file it reads the data and the equations from the VTK file \textbf{solar\_system.vtk}. However, the parameters like the printing interval or the total simulation time is still need to be defined in the configuration file.
-Theoretically, the total amount of energy in the Solar system remains constant, at least in the simulated 1000 years interval. The sum of the kinetic and potential energy of all planets is plotted in Figure \ref{fig:solar_system_energy}.
+Instead of defining of the particle positions in the configuration file it reads the data and the equations from the VTK file \textbf{solar\_system.vtk}. However, some parameters like the printing interval or the total simulation time is still need to be defined in the configuration file.
+Theoretically, the total amount of energy in the Solar system remains constant, at least over the simulated 1000-year period. The sum of the kinetic and potential energy of all planets is plotted in Figure \ref{fig:solar_system_energy}.
 \begin{figure}[H]
   \includegraphics[scale=0.5]{solar_system_energy.pdf}
   \centering
@@ -1959,14 +1972,14 @@ The discretized form of the equations \equref{eq:dam_break_pde} can be construct
 &\frac{d\textbf{v}_i}{dt}=-\sum_j{\bigg(\frac{p_i}{\rho_i^2}+\frac{p_j}{\rho_j^2}\bigg)m_j\nabla W_{ij}}+\nu\sum_j{2(\textbf{v}_j-\textbf{v}_i)\frac{\textbf{r}_{ij}}{|\textbf{r}_{ij}|^2}\frac{m_j}{\rho_j}\nabla W_{ij}}, \\
 \end{split}
 \end{flalign}
-where $\sigma$ is the smoothing distance of the kernel function $W_{ij}$ and $\textbf{r}_{ij}=\textbf{r}_{i}-\textbf{r}_{j}$. The second term on the RHS of the equations \equref{eq:dambreak_sph_discretized} is the artificial density and velocity diffusion term respectively \cite{Antuono2012}. The application of the density diffusion term is often referred as the $\delta$-SPH formulation \cite{Molteni2009} and \cite{Antuono2010}. Since the equations \equref{eq:dambreak_sph_discretized} do not imply constraint between the velocity and pressure fields, an additional state equation
+where $\sigma$ is the smoothing distance of the kernel function $W_{ij}$ and $\textbf{r}_{ij}=\textbf{r}_{i}-\textbf{r}_{j}$. The second term on the RHS of the equations \equref{eq:dambreak_sph_discretized} is the artificial density and velocity diffusion term respectively \cite{Antuono2012}. The application of the density diffusion term is often referred as the $\delta$-SPH formulation \cite{Molteni2009} and \cite{Antuono2010}. Since the equations \equref{eq:dambreak_sph_discretized} do not imply any constraint between the velocity and pressure fields, an additional state equation
 \begin{equation} \label{eq:eos}
 p_i=c^2(\rho-\rho_0),
 \end{equation}
 is required to couple the equations, where $\rho_0$ is the rest density of the fluid and $c$ is the speed of acoustic waves artificially reduced to ensure numerical stability beside reasonable time step size. Although exact incompressibility cannot be achieved using \equref{eq:eos}, the density variation can be limited to $\delta\rho=2\%$ by choosing $c=10\sqrt{gH}$.
 Assuming the parameters of Table \ref{tbl:dam_break_params}, the following configuration file is required for Nauticle:
 \begin{samepage}
-\begin{example}{Shear layer configuration file}{}
+\begin{example}{Dam break configuration file}{}
 \lstset{basicstyle=\tiny}
 \begin{lstlisting}[language=XML]
 <?xml version="1.0" encoding="UTF-8"?>
@@ -2094,12 +2107,12 @@ Consider an $L=1$ m long one-dimensional solid beam of temperature $T_0=-0.2$ $^
   \caption{Melting solid beam heated on the left side. Darker and lighter shaded areas mark liquid and solid phases respectively. The yellow line referes to the interface with the melting temperature $T_m$.}
   \label{fig:stefan_problem_beam}
 \end{figure}\vspace*{3pt}
-The schematic layout of thThe temperatue distribution along the beam and the marching of the liquid-ice interface is determined by the equations below:
+The schematic layout of the temperatue distribution along the beam and the marching of the liquid-ice interface is determined by the equations below:
 \begin{flalign} \label{eq:stefan_problem_heat}
 &\frac{\partial T}{\partial t}=a\frac{\partial^2 T}{\partial x^2}, \\
 &\frac{\partial S}{\partial t}=-\frac{\partial T}{\partial x}\bigg\vert_{S(t),t}.
 \end{flalign} \label{eq:stefan_problem_interface}
-Equation \equref{eq:stefan_problem_heat} is the one-dimensional heat equation now describes the temperature diffusion in both the liquid and solid phases. The constant $a$ is the heat conduction coefficient with different values per each phase: $a_l=0.002$ m$^2/$s and $a_s=0.005$ m$^2/$s. The motion of the position $S(t)$ of the liquid-solid interface is proportional to the slope of the temperature, hence the heat flux at $S(t)$. By definition, the interface temperature is identical with the melting temperature, requiring the Dirichlet-condition to move together with the interface along the beam. Thus, the boundary conditions obtain the form of
+Equation \equref{eq:stefan_problem_heat} is the one-dimensional heat equation and now describes the temperature diffusion in both the liquid and solid phases. The constant $a$ is the heat conduction coefficient with different values per each phase: $a_l=0.002$ m$^2/$s and $a_s=0.005$ m$^2/$s. The motion of the position $S(t)$ of the liquid-solid interface is proportional to the slope of the temperature, hence the heat flux at $S(t)$. By definition, the interface temperature is identical to the melting temperature, requiring the Dirichlet-condition to move together with the interface along the beam. Thus, the boundary conditions obtain the form of
 \begin{flalign} \label{eq:stefan_problem_bc}
 \begin{split}
 & T(0,t)=0.1, \\
@@ -2122,9 +2135,9 @@ To obtain the approximate solution in Nauticle, the discretized forms of \equref
 &\firstpartial{S}{t}=-\sum_j(T_j-T_i)\frac{m_j}{\rho_j}\firstpartial{W_{ij}}{x_j}.
 \end{split}
 \end{flalign}
-The Dirichlet-conditions \equref{eq:stefan_problem_bc} are simply constrained in each time step as $S(t)$ changes. However, a minor issue remained to consider: temperature derivative in \equref{eq:stefan_problem_heat} refers to the liquid phase only. This constraint has to be satisfied during the solution. The configuration file to run the simulation of the Stefan-problem is as follows:
+The Dirichlet-conditions \equref{eq:stefan_problem_bc} are simply constrained in each time step as $S(t)$ changes. The configuration file to run the simulation of the Stefan-problem is as follows:
 \begin{samepage}
-\begin{example}{Shear layer configuration file}{}
+\begin{example}{Stefan-problem configuration file}{}
 \lstset{basicstyle=\tiny}
 \begin{lstlisting}[language=XML]
 <?xml version="1.0" encoding="UTF-8"?>
@@ -2210,7 +2223,7 @@ Please note that the temperature-dependency of the density is ignored during the
   \label{fig:stefan_problem_result}
 \end{figure}\vspace*{3pt}
 
-Finally, the propagation of the liquid-solid interface is displayed as a functionof time in Figure \ref{fig:stefan_problem_result_s}.
+Finally, the propagation of the liquid-solid interface is displayed as a function of time in Figure \ref{fig:stefan_problem_result_s}.
 \begin{figure}[H]
   \includegraphics[scale=0.5]{stefan_problem_result_s.pdf}
   \centering
@@ -2221,35 +2234,35 @@ Finally, the propagation of the liquid-solid interface is displayed as a functio
 
 \subsection{Building evacuation} \label{sec:SFM_example}
 \subsubsection{Problem definition}
-Given a simplified single story building with 7 rooms opening into the same corridor. Both exits occupy the same side of the building and opened from the foreground. The sketch of the building is shown by Figure \ref{fig:building_sketch}.
+Given a simplified single storey building with 7 rooms opening into the same corridor. Both exits occupy the same side of the building and open outwards. The sketch of the building is shown by Figure \ref{fig:building_sketch}.
 \begin{figure}[H]
   \includegraphics[scale=0.5]{building_sketch.pdf}
   \centering
   \caption{Sketch of the building to evacuate. Green arrows show the directions to leave the building.}
   \label{fig:building_sketch}
 \end{figure}\vspace*{3pt}
-It is assumed that 120 initially randomly distributed people tends to leave the building in the shortest possible direction.
+It is assumed that 120 initially randomly distributed people aim to leave the building in the shortest possible direction.
 \subsubsection{Numerical model and results}
 Again, the governing equation of the standard SFM:
 \begin{flalign}
 &\frac{d\textbf{v}_i}{dt}=\frac{v_0\textbf{e}_0-\textbf{v}_i}{\tau}-\frac{1}{m_i}\sum_{j\neq i}{\bigg[A_i exp\bigg(\frac{R_{ij}-d_{ij}}{B_i}\bigg)+k(R_{ij}-d_{ij})-c_{ij}\bigg]\textbf{n}_{ji}},
 \end{flalign}
-which can be solved by numerical integration, in this case, the explicit Euler scheme has been chosen. The constants $A$, $B$, $k$, $c$ are considered to be identical for each individual person. The desired position of each person is calculated based on the current position, hence it is automatically updated as a person leaves a room.
-The mass of the people is randomly distributed between $50$ kg and $100$ kg and used to calculate the sizes with the linear function
+which can be solved by numerical integration, accordingly, the explicit Euler scheme has been chosen. The constants $A$, $B$, $k$, $c$ are considered to be identical for each individual person. The desired position of each person is calculated based on the current position, hence it is automatically updated as a person leaves a room.
+The mass of the individuals is randomly distributed between $50$ kg and $100$ kg and used to calculate the sizes with the linear function
 \begin{flalign}
 R_i=0.002m_i+0.15.
 \end{flalign}
-The desired velocities are also randomly chosen independently from the sizes. To prevent people from crossing any of the walls, the boundary conditions (hence the building) is built up using nodes with the same properties as the people except that they are fixed in space during the whole simulation. The discretized building is shown by Figure \ref{fig:discretized_building}. The $R_w$ radii of the wall-nodes are constant and $R_w=0.1$ m. 
+The desired velocities are also randomly chosen independently from the sizes. To prevent people from crossing any of the walls, the boundary conditions (hence the building) is built up using nodes having the same properties as the people except that they are fixed in space during the whole simulation. The discretized building is shown by Figure \ref{fig:discretized_building}. The $R_w$ radii of the wall-nodes are constant and $R_w=0.1$ m. 
 \begin{figure}[H]
   \includegraphics[scale=0.25]{discretized_building.pdf}
   \centering
   \caption{Discretization of the building by fixed nodes (blue) and initial distribution of people (red). }
   \label{fig:discretized_building}
 \end{figure}\vspace*{3pt}
-Altough the initial condition semms to be unphysical due to the interference of people and wall nodes, the repulsion model rapidly forces red nodes to a feasible position without significantly influencing the results.
+Altough the initial condition seems to be unphysical due to the interference of people and wall nodes, the repulsion model rapidly forces red nodes to a feasible position without significantly influencing the results.
 Running the following configuration file
 \begin{samepage}
-\begin{example}{Shear layer configuration file}{}
+\begin{example}{Evacuation configuration file}{}
 \lstset{basicstyle=\tiny}
 \begin{lstlisting}[language=XML]
 <?xml version="1.0" encoding="UTF-8"?>
@@ -2354,7 +2367,7 @@ in Nauticle performs the simulation of the evacuation of the building for one mi
 The complete evacuation occured in slightly more than $40$ seconds.
 
 \section{The Nauticle open-source code}
-This section comments the role of each source and header file of Nauticle. For better clarity the explanation is divided into different groups marked by the subsequent sections.
+This section comments the role of each source and header file of Nauticle. For better clarity, the explanation is divided into different groups marked by the subsequent sections.
 \subsection{Nodes of the expression tree}
 
 \textbf{pmExpression.h / pmExpression.cpp} \\
@@ -2409,7 +2422,7 @@ Declares / defines the filter node in the expression (tree abstract class).
 Declares / defines the Discrete Vortex Method interaction in the expression tree.
 
 \textbf{pmSph\_operator.h} \\
-Declares / defines the Smoothed Particle Hydrodanmics interaction in the expression tree.
+Declares / defines the Smoothed Particle Hydrodynamics interaction in the expression tree.
 
 \textbf{pmSfm\_operator.h / pmSfm\_operator.cpp} \\
 Declares / defines the Social Force Model interaction in the expression tree.
@@ -2445,13 +2458,13 @@ Declares / defines class for writing results to VTK files.
 Declares / defines the class that reads the configuration file and generates the simulation case based on it.
 
 \textbf{pmLog\_stream.h / pmLog\_stream.cpp} \\
-Declares / defines the class for wrinting functions.
+Declares / defines the class for writing functions.
 
 
 \subsubsection{Files of simulation case}
 
 \textbf{pmCase.h / pmCase.cpp} \\
-Declares / defines the case class repsesenting  simulation case.
+Declares / defines the case class representing  simulation case.
 
 \textbf{pmCase\_manager.h / pmCase\_manager.cpp} \\
 Declares / defines the class for simulation management like solution of equations and writing results.
@@ -2463,19 +2476,19 @@ Declares / defines the class to parse runtime commands.
 Declares / defines the class holding information about the simulation domain and its boundaries.
 
 \textbf{pmEquation.h / pmEquation.cpp} \\
-Declares / defines the class that holds a single user defined equation.
+Declares / defines the class that holds a single user-defined equation.
 
 \textbf{pmEquation\_parser.h / pmEquation\_parser.cpp} \\
-Declares / defines the class of user defined equation parsing.
+Declares / defines the class of user-defined equation parsing.
 
 \textbf{pmExpression\_parser.h / pmExpression\_parser.cpp} \\
-Declares / defines the class to parse user defined expressions.
+Declares / defines the class to parse user-defined expressions.
 
 \textbf{pmGrid.h / pmGrid.cpp} \\
 Declares / defines the class that generates one-, two- or three-dimensional grids.
 
 \textbf{pmGrid\_space.h / pmGrid\_space.cpp} \\
-Declares / defines that stores the grids defined during the simulation.
+Declares / defines the class that stores the grids specified during the simulation.
 
 \textbf{pmKernel.h / pmKernel.cpp} \\
 Declares / defines the class of kernel functions.
@@ -2484,7 +2497,7 @@ Declares / defines the class of kernel functions.
 Declares / defines the class with math parsing methods (abstract class).
 
 \textbf{pmMath\_test.h / pmMath\_test.cpp} \\
-Declares / defines the class that checks if a name in the user defined equation is a function name.
+Declares / defines the class that checks if a name in the user-defined equation is a function name.
 
 \textbf{pmNoncopyable.h} \\
 Declares / defines the class that prevents to copy any of the object of its derived classes (abstract class).
@@ -2493,19 +2506,19 @@ Declares / defines the class that prevents to copy any of the object of its deri
 Declares / defines the class that stores the parameters of the simulation.
 
 \textbf{pmRandom.h / pmRandom.cpp} \\
-Declares / defines the functions of random number generation.
+Declares / defines functions for random number generation.
 
 \textbf{pmSort.h} \\
-Declares / defines the function to sord data.
+Declares / defines the function to sort data.
 
 \textbf{pmTensor.h / pmTensor.cpp} \\
 Declares / defines the fundamental quantity tensor in the expression tree.
 
 \textbf{pmTensor\_parser.h / pmTensor\_parser.cpp} \\
-Declares / defines the class that performs the parsing of user defined expressions.
+Declares / defines the class that performs the parsing of user-defined expressions.
 
 \textbf{pmWorkspace.h / pmWorkspace.cpp} \\
-Declares / defines the class for workspace that keeps the simulation data defined by the user.
+Declares / defines the class for the workspace that keeps the simulation data defined by the user.
 
 
 \subsubsection{Further files}
@@ -2530,11 +2543,11 @@ Defines the major and minor version numbers of Nauticle.
 
 
 \section{Nauticle future}
-The development of Nauticle is started around the late 2015. Initially the code was built up using former particle-based algorithms written by the author. After the implementation of the solver core following the basic ideas aiming generality, the software became a useful simulation tool in several research areas. However, being a small and young project, further developments are required to extend the capabilities of the solver.
+The development of Nauticle is started around the second half of 2015. Initially, the code was built up using former particle-based algorithms written by the author. After the implementation of the solver core following the basic ideas aiming generality, the software became a useful simulation tool in several research areas. However, being a small and new project, further developments are required to extend the capabilities of the solver.
 
-The following features are planned to be developed in the next versions of Nauticle:
+The following features are planned to be included in the next versions of Nauticle:
 \begin{enumerate}
-\item Generation and runtime compilation of user defined equations to increase computational efficiency.
+\item Generation and runtime compilation of user-defined equations to increase computational efficiency.
 \item Extend the environment for implicit meshless schemes.
 \item Implementation of particle sources and sinks.
 \end{enumerate}
