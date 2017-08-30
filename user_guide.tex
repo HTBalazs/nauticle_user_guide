@@ -1177,7 +1177,7 @@ After performing the four steps above, Nauticle becomes suitable for the applica
 \begin{lstlisting}[language=XML]
   <!-- ... -->
   <equations>
-    <eq1 value="phi=user_method(op1, op2)">
+    <eq1 value="phi=user_method(op1, op2)"/>
   </equations>
   <!-- ... -->
 \end{lstlisting}
@@ -2053,7 +2053,7 @@ Assuming the parameters of Table \ref{tbl:dam_break_params}, the following confi
       <equations>
         <time value="T=T+dt"/>
         <cont value="rho_dot=-rho*sph_D00(v,mass,rho,Wp52220,csize)"/>
-        <delta_sph value="rho_dot=rho_dot+0.1*c*h*sph_L0(rho,mass,rho,Wp52220,csize)">
+        <delta_sph value="rho_dot=rho_dot+0.1*c*h*sph_L0(rho,mass,rho,Wp52220,csize)"/>
         <irho0 value="rho=euler(rho,rho_dot,dt)"/>
         <EOS0 value="p=c^2*(rho-rho0)"/>
         <acc0 value="a=-1/rho*sph_G11(p,mass,rho,Wp32220,csize)+g"/>
