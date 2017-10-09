@@ -377,8 +377,8 @@ The discretized form of \equref{continuum_diffop} is as follows:
 Since the straightforward (or naive) differential operator \equref{naive_diffop} suffers from the lack of $0^{th}$ order consitency when the particle layout is not perfectly uniform, several attempts were made to increase the accuracy. The different formulae of differential operators form a trade-off between consistency and conservation properties, and the choice of a suitable operator is usually based on physical considerations of a specific problem.
 Two of the most frequently applied first order SPH differential operators are:
 \begin{flalign} \label{corrected_diffop1}
-  &1.\quad\langle \nabla A(\textbf{r}_i)\rangle=\sum_{j}{\Bigg(\rho_j^k \frac{A(\textbf{r}_i)}{\rho_i^k}+\rho_i^k \frac{A(\textbf{r}_j)}{\rho_j^k}\Bigg)\nabla W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}}, \\
-  &2.\quad\langle \nabla A(\textbf{r}_i)\rangle=\sum_{j}{\Bigg(\rho_i^k \frac{A(\textbf{r}_i)}{\rho_j^k}-\rho_j^k \frac{A(\textbf{r}_j)}{\rho_i^k}\Bigg)\nabla W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}},
+  &1.\quad\langle \nabla A(\textbf{r}_i)\rangle=\frac{1}{\rho_i^k}\sum_{j}{\Bigg(\rho_j^k A(\textbf{r}_j)-\rho_j^k A(\textbf{r}_i)\Bigg)\nabla W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}}, \\
+  &1.\quad\langle \nabla A(\textbf{r}_i)\rangle=\sum_{j}{\Bigg(\rho_j^k \frac{A(\textbf{r}_i)}{\rho_i^k}+\rho_i^k \frac{A(\textbf{r}_j)}{\rho_j^k}\Bigg)\nabla W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}},
   \label{corrected_diffop2}
 \end{flalign}
 where the power $k$ equals $0$ or $1$ \cite{Violeau2012}.\\
@@ -450,7 +450,7 @@ with $F_{ij}^n$ and $F_{ij}^t$ being the normal and tangential forces and $T_{ij
 \myparagraph{Normal contact force model}
 The abovementioned overlapping length anneals the collision response of rigid objects by the $\delta$-dependent repulsive normal contact force model based on the Hertzian stress and damping
 \begin{flalign} \label{DEM_normal_force}
-&\textbf{F}_{ij}^n=(k_{Hz}\delta^{3/2}+c_{Hz}\delta^{1/4}\dot{\delta})n,
+&\textbf{F}_{ij}^n=-(k_{Hz}\delta^{3/2}+c_{Hz}\delta^{1/4}\vert\textbf{v}_{ij}\vert)\textbf{n}_{ji},
 \end{flalign}
 where
 \begin{align} \label{DEM_Hertzian_spring}
@@ -465,15 +465,15 @@ are the spring and damping coefficients of the collision in normal direction wit
 \end{align}
 
 \myparagraph{Tangential contact force and torque model}
-The tangential or shear forces between colliding particles are determined by the relative linear and angular velocities $v_{ij}$ and $\bm{\omega}_{ij}$. The tangential contact force model is written as
+The tangential or shear forces between colliding particles are determined by the relative linear and angular velocities $\textbf{v}_{ij}$ and $\bm{\omega}_{ij}$. The tangential contact force model is written as
 \begin{flalign} \label{DEM_tangential_force}
-&\textbf{F}_{ij}^t=\min(k^v\textbf{v}^t,\phi \textbf{F}_{ij}^n),
+&\textbf{F}_{ij}^t=-\phi\vert\textbf{F}_{ij}^n\vert\textbf{t}_{ij},
 \end{flalign}
-where $k^v$ and $\phi $ are the tangential viscous damping and Coulomb friction coefficients respectively and
-\begin{flalign} \label{DEM_tangential_velocity}
-&\textbf{v}^t=\textbf{v}_{ij}-(\textbf{v}_{ij}\textbf{n}_{ji})n+R_i'\textbf{n}_{ji}\times\bm{\omega}_i+R_j'\textbf{n}_{ji}\times\bm{\omega}_j,
+where $\phi $ is the tangential Coulomb-friction coefficient and
+\begin{flalign}
+&\textbf{t}_{ij}=\textbf{v}_{ij}-(\textbf{v}_{ij}\textbf{n}_{ji})\textbf{n}_{ji}+\bm{\omega}_i\times\bigg(R_i-\frac{\delta}{2}\bigg)\textbf{n}_{ji} + \bm{\omega}_j\times\bigg(R_j-\frac{\delta}{2}\bigg)\textbf{n}_{ji}.
 \end{flalign}
-is the relative tangential velocity denoting the actual distance of particle $i$ and the contact point with $R_i'=(R_i-\delta/2)$. Finally, the tangential contact forces are used to calculate the resultant torque of particle $i$:
+The tangential contact forces are used to calculate the resultant torque of particle $i$:
 \begin{flalign} \label{DEM_tangential_force}
 &\textbf{T}_i=\sum_j{R_i'\textbf{n}_{ji}\times \textbf{F}_{ij}^t}.
 \end{flalign}
