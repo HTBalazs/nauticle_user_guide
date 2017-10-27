@@ -1,4 +1,4 @@
-\newcommand{\nauticleversion}{1.0.170815}
+\newcommand{\nauticleversion}{1.0.171019}
 \newcommand{\installer}{install-\nauticleversion{}.sh}
 \newcommand{\execname}{\textbf{nauticle}}
 
@@ -215,7 +215,7 @@ urlcolor=black}
 \color{nauticlegreen}
 \rule{\linewidth}{1.5mm} \\[0.5cm]
 \color{black}
-{\large Nauticle version: \nauticleversion{} \\ \today}
+{\large Nauticle version: \nauticleversion{} \\}
 % Bottom of the page
 \vfill
 % Author and supervisor
@@ -450,7 +450,7 @@ with $F_{ij}^n$ and $F_{ij}^t$ being the normal and tangential forces and $T_{ij
 \myparagraph{Normal contact force model}
 The abovementioned overlapping length anneals the collision response of rigid objects by the $\delta$-dependent repulsive normal contact force model based on the Hertzian stress and damping
 \begin{flalign} \label{DEM_normal_force}
-&\textbf{F}_{ij}^n=-(k_{Hz}\delta^{3/2}+c_{Hz}\delta^{1/4}\vert\textbf{v}_{ij}\vert)\textbf{n}_{ji},
+&\textbf{F}_{ij}^n=-(k_{Hz}\delta^{3/2}+c_{Hz}\delta^{1/4})\textbf{n}_{ji},
 \end{flalign}
 where
 \begin{align} \label{DEM_Hertzian_spring}
@@ -467,12 +467,13 @@ are the spring and damping coefficients of the collision in normal direction wit
 \myparagraph{Tangential contact force and torque model}
 The tangential or shear forces between colliding particles are determined by the relative linear and angular velocities $\textbf{v}_{ij}$ and $\bm{\omega}_{ij}$. The tangential contact force model is written as
 \begin{flalign} \label{DEM_tangential_force}
-&\textbf{F}_{ij}^t=-\phi\vert\textbf{F}_{ij}^n\vert\textbf{t}_{ij},
+&\textbf{F}_{ij}^t=\phi\vert\textbf{F}_{ij}^n\vert\textbf{t}_{ij},
 \end{flalign}
 where $\phi $ is the tangential Coulomb-friction coefficient and
-\begin{flalign}
-&\textbf{t}_{ij}=\textbf{v}_{ij}-(\textbf{v}_{ij}\textbf{n}_{ji})\textbf{n}_{ji}+\bm{\omega}_i\times\bigg(R_i-\frac{\delta}{2}\bigg)\textbf{n}_{ji} + \bm{\omega}_j\times\bigg(R_j-\frac{\delta}{2}\bigg)\textbf{n}_{ji}.
-\end{flalign}
+\begin{gather}
+\textbf{t}_{ij}=\frac{\textbf{v}^t}{\vert\textbf{v}^t\vert} \\
+\textbf{v}^t=-\textbf{v}_{ij}+(\textbf{v}_{ij}\textbf{n}_{ji})\textbf{n}_{ji}+\bm{\omega}_i\times\bigg(R_i-\frac{\delta}{2}\bigg)\textbf{n}_{ji} + \bm{\omega}_j\times\bigg(R_j-\frac{\delta}{2}\bigg)\textbf{n}_{ji}.
+\end{gather}
 The tangential contact forces are used to calculate the resultant torque of particle $i$:
 \begin{flalign} \label{DEM_tangential_force}
 &\textbf{T}_i=\sum_j{R_i'\textbf{n}_{ji}\times \textbf{F}_{ij}^t}.
@@ -789,7 +790,7 @@ where $D$ is the number of the dimensions, $\alpha_1=1/\sigma$, $\alpha_2=2/(\pi
 \end{cases}
 \end{equation}
 % \]
-Here $\alpha_1=2/(3h)$, $\alpha_2=10/(7\pi \sigma^2)$ and $\alpha_3=1/(\pi \sigma^3)$. The influence radius of the cubic kernel also equals $2q$.
+Here $\alpha_1=2/(3\sigma)$, $\alpha_2=10/(7\pi \sigma^2)$ and $\alpha_3=1/(\pi \sigma^3)$. The influence radius of the cubic kernel also equals $2q$.
 
 \textbf{Fifth order polynomial (quintic)}:
 \begin{flalign} \label{eq:kernel_quintic}
@@ -1192,6 +1193,7 @@ Since the Nauticle package currently does not provide a pre-built version, the u
 Currently, the installation process does not support Windows, it works only on Linux (distributions that support Advanced Packaging Tool (APT)) and Mac OSX systems. Hereinafter Linux is considered to support APT.
 Nauticle requires a few dependencies and requirements to be installed. These are the following:
 \begin{itemize}
+  \item gcc and g++ of version 4.8.
   \item cmake (at least version 3.5) (\myhref{https://cmake.org/download/}{https://cmake.org/download/}),
   \item Visualization Toolkit 7.0.0 (\myhref{http://www.vtk.org/files/release/7.0/VTK-7.0.0.zip}{http://www.vtk.org/files/release/7.0/VTK-7.0.0.zip}),
   \item Common utilities (\myhref{https://bitbucket.org/BalazsToth/commonutils}{https://bitbucket.org/BalazsToth/commonutils}),
@@ -1204,7 +1206,7 @@ During the installation process, it is assumed that the user has internet connec
 Note: to avoid any version conflicts it is preferred to install and build Nauticle with its dependencies using HashDist, which is an environment management system (\myhref{https://github.com/hashdist/hashdist}{https://github.com/hashdist/ hashdist}). However, it is not mandatory and the automated installation process does not apply any environment manager. \\
 Except for the VTK library, all header and binary files related to the dependencies are required to be copied into the /usr/local/include/<dependency> and /usr/local/lib/<dependency> directories in case of both Linux and Mac systems. VTK libary should be placed into the directory /usr/local/VTK.7.0.0 and built simply by following the instructions of the VTK Documentation. Obviously, to compile and build Nauticle, all its dependencies are required to be completely installed in the proper directories. 
 \subsection{Automated installation}
-Although it is possible to install and build the dependencies and Nauticle manually, it is recommended to use the installation shell script arriving with Nauticle. The script installs the whole package including the dependencies by typing the command
+Although it is possible to install and build the dependencies and Nauticle manually, it is recommended to use the installation shell script arriving with Nauticle. However, it is assumed that the proper version (v4.8) of \texttt{gcc} and \texttt{g++} are already installed. The script installs the whole package including the dependencies by typing the command
 \begin{lstlisting}[language=bash]
   $ sudo sh (*@\installer{}@*)
 \end{lstlisting}
@@ -1216,11 +1218,11 @@ in terminal after changing directory to the desired folder. The content of the s
 #!/bin/sh
 
 # Versions of nauticle and its dependencies
-NAUTICLE_version="1.0.170815"
+NAUTICLE_version="1.0.171019"
 VTK_version="7.0.0"
 CU_VERSION="1.0.170815"
 PL_version="1.0.170815"
-HX_version="1.0.170815"
+HX_version="1.0.170904"
 
 # Set current directory to install directory.
 INSTALL_DIR=$PWD
@@ -1235,14 +1237,10 @@ if [ "$(uname)" = "Darwin" ]; then
     OS="Mac"
 elif [ $OS = "Linux" ]; then
   # if linux, install opengl and cmake
-  if [ "$(command -v apt-get)" ]; then
     sudo apt-get update
-    sudo apt-get --yes --force-yes install build-essential
-    sudo apt-get --yes --force-yes install freeglut3-dev
-    sudo apt-get --yes --force-yes install cmake
-  else
-    echo "OS is not supported. Try to install dependencies manually."
-  fi
+  sudo apt-get --yes --force-yes install build-essential
+  sudo apt-get --yes --force-yes install freeglut3-dev
+  sudo apt-get --yes --force-yes install cmake
 fi
 
 # Install proper version of VTK library
@@ -1339,15 +1337,6 @@ Note that the optional runtime commands are forwarded by \textbf{start.sh}, whic
   $ sh start.sh <arguments_list>
 \end{lstlisting}
 where the arguments\_list consists of the options listed in Table \ref{tbl:runtime_commands}.
-
-
-
-
-
-
-
-
-
 
 \section{Examples} \label{sec:examples}
 This section describes a few examples of the application of the Nauticle solver to more or less simple physical models governed by partial or ordinary differential equations. The examples are selected to cover a wide range of applications from both physical and mathematical point of view.
@@ -2443,7 +2432,7 @@ Declares / defines the class from which the minimum, maximum, mean, and sum inte
 Declares / defines the class that calculates the sum of the given field.
 
 
-\subsubsection{Input/Output files}
+\subsection{Input/Output files}
 
 \textbf{pmVTK\_manager.h / pmVTK\_manager.cpp} \\
 Declares / defines the parent class of VTK read and write classes (abstract class).
@@ -2461,7 +2450,7 @@ Declares / defines the class that reads the configuration file and generates the
 Declares / defines the class for writing functions.
 
 
-\subsubsection{Files of simulation case}
+\subsection{Files of simulation case}
 
 \textbf{pmCase.h / pmCase.cpp} \\
 Declares / defines the case class representing  simulation case.
@@ -2521,7 +2510,7 @@ Declares / defines the class that performs the parsing of user-defined expressio
 Declares / defines the class for the workspace that keeps the simulation data defined by the user.
 
 
-\subsubsection{Further files}
+\subsection{Further files}
 
 \textbf{main.cpp} \\
 Contains the main function, handles runtime commands.
