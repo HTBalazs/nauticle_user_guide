@@ -1,4 +1,4 @@
-\newcommand{\nauticleversion}{1.0.171019}
+\newcommand{\nauticleversion}{1.0.180207}
 \newcommand{\installer}{install-\nauticleversion{}.sh}
 \newcommand{\execname}{\textbf{nauticle}}
 
@@ -157,7 +157,7 @@ urlcolor=black}
 \definecolor{darkblue}{rgb}{0.0,0.0,0.6}
 \definecolor{cyan}{rgb}{0.0,0.6,0.6}
 
-\lstdefinelanguage{XML}
+\lstdefinelanguage{YAML}
 {
   morestring=[b]",
   morestring=[s]{>}{<},
@@ -167,7 +167,7 @@ urlcolor=black}
   identifierstyle=\color{darkblue},
   keywordstyle=\color{cyan},
   commentstyle=\color{gray},
-  morekeywords={xmlns,version,type}% list your attributes here
+  morekeywords={yamlns,version,type}% list your attributes here
 }
 
 \usepackage{tabularx,ragged2e,booktabs,caption}
@@ -249,11 +249,11 @@ It is apparent, that the interest in such numerical tools has begun to increase 
 
 Nauticle is a novel general-purpose open-source C++ scientific numerical environment and solver for the application and implementation particle methods. The goal of the library is to establish a particle-based numerical solver that can solve user-defined system of algebraic and differential equations over a set of spatially distributed particles in one, two or three dimensions with the most suitable numerical particle-schemes. Solutions can be governed by priori implemented schemes like Smoothed Particle Hydrodynamics (SPH), Discrete Element Method (DEM), or even the Social Force Model (SFM) etc.
 
-Hgihlighted features:
+Highlighted features:
 \begin{itemize}
   \item Simulations in one-, two- or three-dimensions,
   \item Predefined particle-based interaction operators: N-body gravitational interactions, SPH, DEM, DVM, and SFM,
-  \item Usage through user-friendly, short and clear-cut XML-formatted configuration files without coding in C++,
+  \item Usage through user-friendly, short and clear-cut YAML-formatted configuration files without coding in C++,
   \item Truly arbitrary system of equations built up using the variety of arithmetic operators, arithmetic functions and interaction operators.
   \item Arbitrary amount of scalar-, vector- or tensor fields over the set of particles,
   \item Periodic and symmetric or cut-off (neither periodic nor symmetric) boundaries,
@@ -262,6 +262,18 @@ Hgihlighted features:
 \end{itemize}
 
 \textit{The user's guide is organized as follows: Firstly, the most important fundamentals and classification of particle methods are discussed, then, yet in the same section, the built-in methods are briefly presented. Later, the most important coding issues and features are described. After presenting the main aspects of the usage of Nauticle, the intermediate user and developer interface is introduced and explained in detail along with a step-by-step implementation guide. The discussion of the interface is followed by the short introduction to the Nauticle package and the installation procedure. In the last sections the examples help the reader to recognize the application of the presented methods, finally, the files of Nauticle are labeled by their exact role in solver.}
+
+\section{Features and bugfixes in version \nauticleversion}
+\begin{itemize}
+  \item Bugfix for particle interaction switch for SPH with variable smoothing length.
+  \item Domains now support different cell sizes in different directions.
+  \item Matrix-logarithm function ("logm") has been implemented.
+  \item Eigen-system calculation (eigenvectors "eigsys" and eigenvalues "eigval") is implemented.
+  \item Extension of position field for symmetric and periodic boundary conditions in SPH operators.
+  \item Change configuration file type from XML to YAML for better readability.
+  \item New SPH operators for tensile instability correction and artificial viscosity are implemented.
+  \item SPH operator is implemented for the calculation of particle-inertia tensor.
+\end{itemize}
 
 \section{Methodology}
 \subsection{Particle methods} \label{sec:particle_method_classification}
@@ -350,12 +362,12 @@ The kernel function $W(\textbf{r}-\textbf{r}',\sigma)$ has infinite or finite in
 \begin{split}
 &1.\quad W(\textbf{r}-\textbf{r}',\sigma)\in C^k(\Omega) \puretext{where} k>1, \\
 &2.\quad supp(W(\textbf{r}-\textbf{r}',\sigma))=B', \\
-&3.\quad W(\textbf{r}-\textbf{r}',\sigma)>0 \puretext{if} \norm{r}<\Delta, \\
+&3.\quad W(\textbf{r}-\textbf{r}',\sigma)>0 \puretext{if} \norm{\textbf{r}-\textbf{r}'}<\Delta, \\
 &4.\quad \int_{\Omega}{W(\textbf{r}-\textbf{r}',\sigma)dV}=1, \\
 &5.\quad \lim_{\sigma\to 0}W(\textbf{r}-\textbf{r}',\sigma)=\delta(\textbf{r}-\textbf{r}').
 \end{split}
 \end{flalign}
-Here $B'$ is a spherical volume around $r$ with a radius of $\Delta$. \\
+Here $B'$ is a spherical volume around $\textbf{r}$ with a radius of $\Delta$. \\
 The discretization of \equref{convolution_kernel} to a cloud of particles is written as
 \begin{flalign} \label{eq:discrete_convolution}
   \langle A(\textbf{r}_i)\rangle=\sum_{j}{A(\textbf{r}_j)W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}},
@@ -378,11 +390,11 @@ Since the straightforward (or naive) differential operator \equref{naive_diffop}
 Two of the most frequently applied first order SPH differential operators are:
 \begin{flalign} \label{corrected_diffop1}
   &1.\quad\langle \nabla A(\textbf{r}_i)\rangle=\frac{1}{\rho_i^k}\sum_{j}{\Bigg(\rho_j^k A(\textbf{r}_j)-\rho_j^k A(\textbf{r}_i)\Bigg)\nabla W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}}, \\
-  &1.\quad\langle \nabla A(\textbf{r}_i)\rangle=\sum_{j}{\Bigg(\rho_j^k \frac{A(\textbf{r}_i)}{\rho_i^k}+\rho_i^k \frac{A(\textbf{r}_j)}{\rho_j^k}\Bigg)\nabla W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}},
+  &2.\quad\langle \nabla A(\textbf{r}_i)\rangle=\sum_{j}{\Bigg(\rho_j^k \frac{A(\textbf{r}_i)}{\rho_i^k}+\rho_i^k \frac{A(\textbf{r}_j)}{\rho_j^k}\Bigg)\nabla W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}},
   \label{corrected_diffop2}
 \end{flalign}
 where the power $k$ equals $0$ or $1$ \cite{Violeau2012}.\\
-The construction of a second order differential operator requires some further considerations. Since the application of \equref{naive_diffop} to a second order  differentiation of $A(\textbf{r})$
+The construction of a second order differential operator requires some further considerations. Since the application of \equref{naive_diffop} to a second order differentiation of $A(\textbf{r})$
 \begin{flalign}
   \langle \Delta A(\textbf{r}_i)\rangle=\sum_{j}{A(\textbf{r}_j)\Delta W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}}
 \end{flalign}
@@ -408,9 +420,53 @@ which has a special variant
 to approximate the expression $\nabla b(\textbf{r}) \nabla A(\textbf{r})$ with $b(\textbf{r})$ being an arbitrary function.
 Employing the differential operators (\ref{corrected_diffop1}-\ref{secondorder_diffop2}), the SPH-discretized form of partial differential equations can be constructed.
 
+Further SPH operators are implemented in Nauticle to cover the most frequently applied SPH-models. The first and most important one of them is the artificial viscosity term (operating on the velocity field) written as
+\begin{flalign} \label{eq:AV_op}
+   \frac{d\textbf{v}^{av}_i}{dt}=\sum_{j}{\Pi_{ij}m_j\nabla W(\textbf{r}_i-\textbf{r}_j,\sigma)}
+\end{flalign}
+where
+% \[
+\begin{equation}
+    \Pi_{ij}= 
+\begin{cases}
+  \frac{(\textbf{v}_j-\textbf{v}_i)(\textbf{r}_j-\textbf{r}_i)}{\rho_j\norm{\textbf{r}_j-\textbf{r}_i}} & \text{if } (\textbf{v}_j-\textbf{v}_i)(\textbf{r}_j-\textbf{r}_i) < 0, \\
+  0 &\text{ otherwise},
+\end{cases}
+\end{equation}
+% \]
+which is often used to remove unphysical oscillations in fluid flows. Another improvement for not only fluid flows but elastic solid state simulations is the application of artificial stress to avoid tensile instability. The particle acceleration due to the artificial stress is calculated as follows:
+\begin{flalign} \label{eq:TI_op}
+  \frac{d\textbf{v}^{ap}_i}{dt}=-\sum_{j}{\textbf{R}_{ij}f^n\nabla W(\textbf{r}_i-\textbf{r}_j,\sigma)m_j}.
+\end{flalign}
+where
+\begin{align} \label{eq:TI_op}
+  \begin{split}
+    &\textbf{R}_{ij}=\textbf{R}_{i}+\textbf{R}_{j}, \\
+    &f=\frac{W(\textbf{r}_i-\textbf{r}_j,\sigma)}{W(dx,\sigma)}
+  \end{split}
+\end{align}
+$dx$ being the average interparticle distance, $n=4$ and
+% \[
+\begin{equation}
+    \textbf{R}^{\alpha\beta}_{i}= 
+\begin{cases}
+  -\frac{0.2\sigma^{\alpha\beta}_i}{\rho_i^2} & \text{if } \sigma_i^{\alpha\beta}<0, \\
+  0 &\text{ otherwise}.
+\end{cases}
+\end{equation}
+% \]
+In the case of both $\textbf{R}^{\alpha\beta}_{i}$ and $\textbf{R}^{\alpha\beta}_{j}$ are positive, an additional stress component
+\begin{flalign} \label{eq:TI_op}
+  \textbf{R}^{\alpha\beta}_{i}=-\frac{0.01\sigma^{\alpha\beta}_i}{\rho_i^2}
+\end{flalign}
+is calculated to avoid particles forming linear structurres close to hiperbolic regions \cite{Monaghan2000}.
+A much less popular, yet important operator calculates the particle-inertia tensor:
+\begin{flalign} \label{eq:INERTIA_op}
+   \langle I(\textbf{r}_i)\rangle=\sum_{j}{(\textbf{r}_j-\textbf{r}_i)(\textbf{r}_j-\textbf{r}_i)W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}}.
+\end{flalign}
 Finally, a special averaging method, the XSPH interpolant
 \begin{flalign} \label{eq:XSPH_op}
-  \langle A(\textbf{r}_i)\rangle=\sum_{j}{(A(\textbf{r}_j)-A(\textbf{r}_i))W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}}
+   \langle\hat A(\textbf{r}_i)\rangle=\sum_{j}{(A(\textbf{r}_j)-A(\textbf{r}_i))W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}}
 \end{flalign}
 is often applied to the velocity field in fluid simulations to improve spatial distribution of particles \cite{Monaghan1989}.
 
@@ -641,7 +697,8 @@ Since in case of the symmetric condition the interactions are calculated by part
 \begin{flalign} \label{eq:reflection_periodic_symmetric}
 &\textbf{R}=\textbf{I}^d(-2\bm{\beta}_i+1),
 \end{flalign}
-where $I^d$ is a $d$ dimensional identity tensor. 
+where $I^d$ is a $d$ dimensional identity tensor.
+
 Note that in case of certain quantities like angular velocity, or vorticity the reflection \equref{eq:reflection_periodic_symmetric} could be physically incorrect. Such cases are required to be treated with attention at symmetric boundaries by marking a field as non-symmetric (see the details in Section \ref{sec:DVM_example}).
 
 
@@ -723,11 +780,13 @@ Greater than & $gt$ & 2 & Matrix inverse & $inverse$ & 1 \\
 Greater than or equal & $gte$ & 2 & Logical condition & $if$ & 3 \\
 Less than & $lt$ & 2 & Equal & $eq$ & 2 \\
 Less than or equal & $lte$ & 2 & Not equal & $neq$ & 2 \\
-Natural logarithm & $log$ & 1 & Logical and & $and$ & 2 \\
+Natural logarithm & $log$ and $logm$ & 1 & Logical and & $and$ & 2 \\
 Vector length & $magnitude$ & 1 & Logical or & $or$ & 2 \\
 Maximum & $max$ & 2 & Logical negation & $not$ & 1 \\
 Minimum & $min$ & 2 & Logical exclusive or & $xor$ & 2 \\
 Tensor element & $elem$ & 3 & Identity tensor & $identity$ & 1 \\
+Q tensor of QR dec. & $deQ$ & 1 & R tensor of QR dec. & $deR$ & 1 \\ 
+Matrix eigenvectors & $eigsys$ & 1 & Matrix eigenvalues & $eigval$ & 1 \\
 \bottomrule[1.25pt]
 \end{tabular}
 \end{center}
@@ -851,6 +910,9 @@ $sph\_D10$ &  & $\langle div(A_i)\rangle=\sum_j{(A_j+A_i)\nabla W_{ij}\frac{m_j}
 $sph\_D11$ &  & $\langle div(A_i)\rangle=\rho_i\sum_j{\big(\frac{A_j}{\rho_j^2}+\frac{A_i}{\rho_i^2}\big)\nabla W_{ij}m_j}$ \\ [2ex]
 $sph\_L0$ &  & $\langle\Delta A_i\rangle=\sum_{j}{2(A(\textbf{r}_i)-A(\textbf{r}_j))\frac{\textbf{r}_j-\textbf{r}_i}{\vert \textbf{r}_j-\textbf{r}_i \vert^2}\nabla W_{ij}\frac{m_j}{\rho_j}}$ \\ [2ex]
 $sph\_L1$ & $B$, $A$, $m$, $\rho$, $W$, $R_{infl}$ & $\langle \nabla (B_i \nabla A_i)\rangle=\sum_{j}{2(B_j-B_i)(A_j-A_i)\frac{\textbf{r}_j-\textbf{r}_i}{\vert \textbf{r}_j-\textbf{r}_i \vert^2}\nabla W_{ij}\frac{m_j}{\rho_j}}$ \\ [2ex]
+$sph\_I$ & $r$, $m$, $\rho$, $W$, $R_{infl}$ & $\langle I(\textbf{r}_i)\rangle=\sum_{j}{(\textbf{r}_j-\textbf{r}_i)(\textbf{r}_j-\textbf{r}_i)W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}}$ \\ [2ex]
+$sph\_A$ & $v$, $m$, $\rho$, $W$, $R_{infl}$ &$\frac{d\textbf{v}^{av}_i}{dt}=\sum_{j}{\Pi_{ij}m_j\nabla W(\textbf{r}_i-\textbf{r}_j,\sigma)}$ \\ [2ex]
+$sph\_T$ & $dx$ $p$, $m$, $\rho$, $W$, $R_{infl}$ &$\frac{d\textbf{v}^{ap}_i}{dt}=-\sum_{j}{\textbf{R}_{ij}f^n\nabla W(\textbf{r}_i-\textbf{r}_j,\sigma)m_j}$ \\ [2ex]
 \bottomrule[1.25pt]
 \end{tabular}
 \end{center}
@@ -918,11 +980,13 @@ Nauticle is designed not only to simulate a wide range of physical models throug
   \caption{Multilevel user and development hierarchy of Nauticle.}
   \label{fig:three_levels}
 \end{figure}
-This section focuses on the pure user level, where no programming knowledge but the application of XML forms is required. The core level is out of the scope of this guide, nevertheless, the second, intermediate user and developer level is introduced in section \ref{sec:interface}. 
+This section focuses on the pure user level, where no programming knowledge but the application of YAML forms is required. The core level is out of the scope of this guide, nevertheless, the second, intermediate user and developer level is introduced in section \ref{sec:interface}. 
 \subsection{Simulation workflow} \label{sec:sim_workflow}
-To define and simulate a problem, a \textit{form} (XML-document) is needed to be passed to the solver. The form contains all the required information about the physical model called \textit{case}. In this section, the structure of the form is discussed through the introduction of the workspace and the user-defined equations.
+To define and simulate a problem, a \textit{form} (YAML-document) is needed to be passed to the solver. The form contains all the required information about the physical model called \textit{case}. In this section, the structure of the form is discussed through the introduction of the workspace and the user-defined equations.
 \subsubsection{Definitions}
-\textbf{Workspace}: A collection of user-defined symbols like constants, variables, fields, and particle system representing the quantities of the physical model.
+\textbf{Symbol}: User defined constant, variable or field that has a name and a tensor value. Particle system is considered to be a symbol as well.
+
+\textbf{Workspace}: A collection of user-defined symbols representing the quantities of the physical model.
 
 \textbf{User-defined equation (UDE)}: Equation, built up using the nodes of the expression tree and the objects stored in the workspace. The evaluation of an equation means the assignment of the RHS solution to the LHS. Consequently the LHS should be a variable, field or particle system. Each UDE has a condition with a default value "true" that determines if the equation has to be solved or not. The condition may have particle-dependent value.
 
@@ -936,24 +1000,24 @@ To define and simulate a problem, a \textit{form} (XML-document) is needed to be
 \end{figure}
 
 The schematic diagram of a simulation is presented in Figure \ref{fig:workflow}. After the parsing of the input files on the left, the case assembler builds the case, which is handled by the simulation scheduler. The latter is responsible for the calculation flow and parallelization. The result files are saved by the VTK-writer governed by the case manager. 
-As soon as the simulation scheduler sends a step request, the solution of the UDE's is carried out by the case itself. The change of the value of any symbol contained by the workspace during the solution is automatically updated. Optionally, any of the result files can be applied as initial conditions for a further simulation (see Section \ref{sec:XML}).
+As soon as the simulation scheduler sends a step request, the solution of the UDE's is carried out by the case itself. The change of the value of any symbol contained by the workspace during the solution is automatically updated. Optionally, any of the result files can be applied as initial conditions for a further simulation (see Section \ref{sec:YAML}).
 
 \subsection{Input/Output file formats}
 During the execution of a simulation, Nauticle works with four types of input and output files. Some of these files are fundamental, the others are optional. The subsequent sections introduce these file types more or less in the order of importance.
-\subsubsection{XML-document} \label{sec:XML}
-The XML-document is the most important and fundamental input file of any simulation executed by Nauticle. No simulation can be executed in absence of the configuration XML-file. Nevertheless, they can be distinguished by the data they contain. The most important advantage of the application of XML-files is that they support random access to the stored data, therefore the user is not required to follow strict rules during the construction of the simulation problem.\\
+\subsubsection{YAML-document} \label{sec:YAML}
+The YAML-document is the most important and fundamental input file of any simulation executed by Nauticle. No simulation can be executed in absence of the configuration YAML-file. Nevertheless, they can be distinguished by the data they contain. The most important advantage of the application of YAML-files is that they support random access to the stored data, therefore the user is not required to follow strict rules during the construction of the simulation problem.\\
 \begin{figure}[H]
-  \includegraphics[scale=1.05]{xml_intro.pdf}
+  \includegraphics[scale=0.8]{yaml_intro.pdf}
   \centering
-  \caption{Structure of the XML-document.}
-  \label{fig:xml_intro}
+  \caption{Structure of the YAML-document.}
+  \label{fig:yaml_intro}
 \end{figure}\vspace*{3pt}
-A simple document is presented in Figure \ref{fig:xml_intro}, in which the whole workspace and the list of equations to be passed to the solver are defined and no external sources are used except for the nodal coordinates (which is optional). Note that the domain boundaries are defined by the number of cells being integral along each axis. Another way of problem initialization is the application of a former simulation result stored in VTK file. Despite that, XML-documents cannot be omitted, but are used to refer to the desired input file. This type of initialization allows a significantly simpler XML-document as it is illustrated in Figure \ref{fig:xml_intro_simple}.
+A simple document is presented in Figure \ref{fig:yaml_intro}, in which the whole workspace and the list of equations to be passed to the solver are defined and no external sources are used except for the nodal coordinates (which is optional). Note that the domain boundaries are defined by the number of cells being integral along each axis. Another way of problem initialization is the application of a former simulation result stored in VTK file. Despite that, YAML-documents cannot be omitted, but are used to refer to the desired input file. This type of initialization allows a significantly simpler YAML-document as it is illustrated in Figure \ref{fig:yaml_intro_simple}.
 \begin{figure}[H]
-  \includegraphics[scale=1]{xml_intro_simple.pdf}
+  \includegraphics[scale=1]{yaml_intro_simple.pdf}
   \centering
-  \caption{Structure of the XML-document referring to a former simulation result.}
-  \label{fig:xml_intro_simple}
+  \caption{Structure of the YAML-document referring to a former simulation result.}
+  \label{fig:yaml_intro_simple}
 \end{figure}\vspace*{3pt}
 \newpage
 Note that in this configuration the workspace and list of equations are also stored in the VTK file:\\
@@ -995,11 +1059,11 @@ The legacy VTK file formats consist of five basic parts \cite{VTK_format}.
 \end{itemize}
 In Nauticle the result files contain the whole case including the workspace and UDE's. The DATASET type is POLYDATA, while the symbols and UDE's are stored as string formatted data.
 \subsubsection{Text document}
-The particle cloud can be optionally defined through text files containing the set of nodal positions instead of the uniform grid generation based on the XML data. Note that the text file should always contain three-dimensional coordinates separated by spaces or tabs. The dimensions of the problem are then defined by the domain and only the relevant coordinates of the nodal positions are considered, other coordinates are dropped.
+The particle cloud can be optionally defined through text files containing the set of nodal positions instead of the uniform grid generation based on the YAML data. Note that the text file should always contain three-dimensional coordinates separated by spaces or tabs. The dimensions of the problem are then defined by the domain and only the relevant coordinates of the nodal positions are considered, other coordinates are dropped.
 \subsubsection{Log files}
 The simulation log file contains the simulation data as it appears in terminal during runtime. Each execution produces a single log file with the name "sim.log" by default. A previous log file with the same name in the working directory is purged at the beginning of the calculation without approval.
 \subsection{Runtime commands}
-There are further optional commands that cannot be defined in the XML-document, namely, the runtime commands summarized in Table \ref{tbl:runtime_commands}. To obtain information about the reserved names you need to use the "-wsres" command.
+There are further optional commands that cannot be defined in the YAML-document, namely, the runtime commands summarized in Table \ref{tbl:runtime_commands}. To obtain information about the reserved names you need to use the "-wsres" command.
 
 Nauticle offers parallelisation on multicore CPU systems. By default, the number of threads to use during the execution is the number of available threads. Hovewer, you may want to limit the solver by defining the actual number threads to use. This can be done by the "-numthreads N" command, where N is the desired number of threads. 
 \begin{table} [h]
@@ -1012,7 +1076,7 @@ Nauticle offers parallelisation on multicore CPU systems. By default, the number
 1. & -help & Display Nauticle information. \\
 2. & -wsres & Lists all reserved names in workspace. \\
 3. & -numthreads <number> & Defines the number of threads to use. Default is detected. \\
-4. & -xmlname <filename> & Defines the name of the XML input file. \\
+4. & -yamlname <filename> & Defines the name of the YAML input file. \\
 5. & -logfile <filename> & Defines the name of the output log file. \\
 6. & -wdir <directory> & Defines the working directory. Full path is required. \\
 7. & -version & Prints the version number. \\
@@ -1069,7 +1133,7 @@ Observing nature it often seems to be evident that the instantaneous motion or s
 \end{flalign}
 we can say that $I_{ij}$ is an interaction operator, a function of any quantities of particles $i$ and $j$. The interpretation of $I_{ij}$ is shown in Figure \ref{fig:interaction_explain}.
 \begin{figure}[H]
-  \includegraphics[scale=0.7]{interaction_explain.pdf}
+  \includegraphics[scale=0.5]{interaction_explain.pdf}
   \centering
   \caption{Explanation of the interaction between nearby objects. a.: a solar system, b.: crowd motion, c.: granular material, d.: continuum substance.}
   \label{fig:interaction_explain}
@@ -1082,7 +1146,7 @@ The subsequent sections present how Nauticle subserves the application of partic
 \subsection{Adoption of interaction laws}
 While in Section \ref{sec:usage_of_nauticle} the usage of Nauticle is described, this section specifies how to adopt a new interaction scheme (hereinafter method) formerly not implemented in Nauticle. Since it is inevitable to modify the code, Nauticle requires recompilation to be extended with new methods.
 
-For a better understanding, the implementation process is divided into the steps below, illustrated by the adoption of a user-defined interaction named \textbf{USER\_METHOD}. Here we assume that \textbf{USER\_METHOD} operator has two operands and later it should be referred as \textit{user\_method(operand1, operand2)} in the XML-configuration file.
+For a better understanding, the implementation process is divided into the steps below, illustrated by the adoption of a user-defined interaction named \textbf{USER\_METHOD}. Here we assume that \textbf{USER\_METHOD} operator has two operands and later it should be referred as \textit{user\_method(operand1, operand2)} in the YAML-configuration file.
 
 \textbf{Step 1: Definition of a child of the interaction class (\textbf{pmInteraction}).} \\
 The minimal example of the \textbf{USER\_METHOD} class reads as:
@@ -1175,7 +1239,7 @@ Assuming that the definition of the \textbf{USER\_METHOD} class is placed in a s
 After performing the four steps above, Nauticle becomes suitable for the application of the desired interaction by simply referring it in a configuration file:
 \begin{example}{Application of the \textit{user\_method} interaction}{}
 \lstset{basicstyle=\tiny}
-\begin{lstlisting}[language=XML]
+\begin{lstlisting}[language=YAML]
   <!-- ... -->
   <equations>
     <eq1 value="phi=user_method(op1, op2)"/>
@@ -1198,9 +1262,9 @@ Nauticle requires a few dependencies and requirements to be installed. These are
   \item Visualization Toolkit 7.0.0 (\myhref{http://www.vtk.org/files/release/7.0/VTK-7.0.0.zip}{http://www.vtk.org/files/release/7.0/VTK-7.0.0.zip}),
   \item Common utilities (\myhref{https://bitbucket.org/BalazsToth/commonutils}{https://bitbucket.org/BalazsToth/commonutils}),
   \item ProLog (\myhref{https://bitbucket.org/BalazsToth/prolog}{https://bitbucket.org/BalazsToth/prolog}),
-  \item HandyXML (\myhref{https://bitbucket.org/BalazsToth/handyxml}{https://bitbucket.org/BalazsToth/handyxml}).
+  \item yaml-cpp (\myhref{https://github.com/jbeder/yaml-cpp}{https://github.com/jbeder/yaml-cpp}).
 \end{itemize}
-The details of the required dependencies are not discussed here, please follow the links to find more information about the listed packages. Further dependencies could be required by the Visualization Toolkit.
+The details of the required dependencies are not discussed here, please follow the links to find more information about the listed packages. Further dependencies could be required by the Visualization Toolkit and yaml-cpp.
 
 During the installation process, it is assumed that the user has internet connection and root privileges (super user). Throughout the following subsection, the automatic installation procedure is discussed in detail.
 Note: to avoid any version conflicts it is preferred to install and build Nauticle with its dependencies using HashDist, which is an environment management system (\myhref{https://github.com/hashdist/hashdist}{https://github.com/hashdist/ hashdist}). However, it is not mandatory and the automated installation process does not apply any environment manager. \\
@@ -1218,11 +1282,11 @@ in terminal after changing directory to the desired folder. The content of the s
 #!/bin/sh
 
 # Versions of nauticle and its dependencies
-NAUTICLE_version="1.0.171019"
+NAUTICLE_version="1.0.180207"
 VTK_version="7.0.0"
 CU_VERSION="1.0.170815"
 PL_version="1.0.170815"
-HX_version="1.0.170904"
+YAMLCPP_version="0.5.3"
 
 # Set current directory to install directory.
 INSTALL_DIR=$PWD
@@ -1234,6 +1298,7 @@ if [ "$(uname)" = "Darwin" ]; then
 # if mac, install wget, and cmake
     brew install wget
     brew install cmake
+    brew install boost
     OS="Mac"
 elif [ $OS = "Linux" ]; then
   # if linux, install opengl and cmake
@@ -1241,6 +1306,7 @@ elif [ $OS = "Linux" ]; then
   sudo apt-get --yes --force-yes install build-essential
   sudo apt-get --yes --force-yes install freeglut3-dev
   sudo apt-get --yes --force-yes install cmake
+  sudo apt-get --yes --force-yes install libboost-all-dev
 fi
 
 # Install proper version of VTK library
@@ -1254,20 +1320,19 @@ sudo make
 cd $INSTALL_DIR
 
 # Download and unzip the required packages
-# Common utils
 PCKG_CU=commonutils_$CU_VERSION.zip
 PCKG_PL=prolog_$PL_version.zip
-PCKG_HX=handyxml_$HX_version.zip
 PCKG_NA=nauticle_$NAUTICLE_version.zip
+PCKG_YM=release-$YAMLCPP_version.zip
 wget https://bitbucket.org/BalazsToth/commonutils/downloads/$PCKG_CU
 wget https://bitbucket.org/BalazsToth/prolog/downloads/$PCKG_PL
-wget https://bitbucket.org/BalazsToth/handyxml/downloads/$PCKG_HX
 wget https://bitbucket.org/nauticleproject/nauticle/downloads/$PCKG_NA
+wget https://github.com/jbeder/yaml-cpp/archive/$PCKG_YM
 sudo unzip $PCKG_CU
 sudo unzip $PCKG_PL
-sudo unzip $PCKG_HX
 sudo unzip $PCKG_NA
-sudo chmod -R 777 commonutils prolog handyxml nauticle
+sudo unzip $PCKG_YM
+sudo chmod -R 777 commonutils prolog nauticle yaml-cpp-release-$YAMLCPP_version
 
 # Install the dependencies and the nauticle executable (nauticle) itself
 cd $INSTALL_DIR/commonutils
@@ -1277,9 +1342,10 @@ sudo make install
 cd $INSTALL_DIR/prolog
 sudo cmake .
 sudo make install
- 
-cd $INSTALL_DIR/handyxml
+
+cd $INSTALL_DIR/yaml-cpp-release-$YAMLCPP_version
 sudo cmake .
+sudo make
 sudo make install
 
 # Set directory name for executable
@@ -1313,7 +1379,7 @@ while true; do
   read -p "Do you wish to delete temporary files?" yn
     case $yn in
         [Yy]* ) cd $INSTALL_DIR
-          sudo rm -r commonutils prolog handyxml
+          sudo rm -r commonutils prolog yaml-cpp-release-$YAMLCPP_version
           sudo rm $PCKG_CU $PCKG_PL $PCKG_HX $PCKG_NA VTK-$VTK_version.zip
           mv $BIN_DIR/nauticle $INSTALL_DIR/tmp
           rm -rf nauticle
@@ -1395,85 +1461,75 @@ To solve the Couette-flow problem the simplest model is built in Nauticle using 
 &\frac{dv_i}{dt}=\sum_j{(\nu_j+\nu_i)(v_j-v_i)\frac{1}{\textbf{r}_{ji}}\frac{m_j}{\rho_j}\nabla W_{ij}}. \\
 \end{split}
 \end{flalign}
-After the discretization the XML-document can be constructed:
+After the discretization the YAML-document can be constructed:
 \begin{example}{Couette-flow configuration file}{}
 \lstset{basicstyle=\tiny}
-\begin{lstlisting}[language=XML]
-<?xml version="1.0" encoding="UTF-8"?>
-<simulation>
-    <case>
-        <workspace>
-            <constants>
-                <L value="1"/>
-                <csize value="L/20"/>
-                <dx value="csize/2"/>
-                <rho0 value="1000"/>
-                <mass value="dx*rho0"/>
-                <lambda value="0.01"/>
-                <nu0 value="0.1"/>
-                <b value="0.03"/>
-                <T1 value="0"/>
-                <T2 value="100"/>
-                <v1 value="0"/>
-                <v2 value="1"/>
-            </constants>
-            <variables>
-                <dt value="0.0025"/>
-                <Time value="0"/>
-            </variables>
-            <particle_system>
-                <domain>
-                    <cell_size value="csize"/>
-                    <minimum value="-L/csize/2-1"/>
-                    <maximum value="L/csize/2+1"/>
-                    <boundary value="periodic"/>
-                </domain>
-                <grid> <!-- bottom boundary particles -->
-                    <gid value="1"/>
-                    <gpos value="-L/2-csize+dx/2"/>
-                    <gsize value="csize"/>
-                    <goffset value="0"/>
-                    <gip_dist value="dx"/>
-                </grid>
-                <grid> <!-- fluid particles -->
-                    <gid value="0"/>
-                    <gpos value="-L/2+dx/2"/>
-                    <gsize value="L-dx"/>
-                    <goffset value="0"/>
-                    <gip_dist value="dx"/>
-                </grid>
-                <grid> <!-- top boundary particles -->
-                    <gid value="2"/>
-                    <gpos value="L/2-dx/2"/>
-                    <gsize value="csize"/>
-                    <goffset value="0"/>
-                    <gip_dist value="dx"/>
-                </grid>
-            </particle_system>
-            <fields>
-                <a value="0"/>
-                <v value="if(eq(0,gid),0,if(eq(gid,1),v1,v2))"/> <!-- initial condition -->
-                <T value="if(eq(0,gid),0,if(eq(gid,1),T1,T2))"/> <!-- initial condition -->
-                <T_dot value="0"/>
-                <nu value="0.1"/>
-            </fields>
-        </workspace>
-        <equations>
-            <time value="Time=Time+dt"/>
-            <heat value="T_dot=lambda*sph_L0(T,mass,rho0,Wp32210,csize)" condition="eq(gid,0)"/>
-            <temp value="T=euler(T,T_dot,dt)" condition="eq(gid,0)"/>
-            <viscosity value="nu=nu0*exp(-b*T)"/>
-            <moment value="a=sph_L1(nu,v,mass,rho0,Wp32210,csize)" condition="eq(gid,0)"/>
-            <vel value="v=euler(v,a,dt)" condition="eq(gid,0)"/>
-        </equations>
-    </case>
-    <parameter_space>
-        <simulated_time value="100"/>
-        <print_interval value="1"/>
-        <confirm_on_exit value="false"/>
-        <output_format value="BINARY"/>
-    </parameter_space>
-</simulation>
+\begin{lstlisting}[language=YAML]
+simulation: 
+  case: 
+    workspace: 
+      constants: 
+        - L: 1
+        - csize: L/20
+        - dx: csize/2
+        - rho0: 1000
+        - mass: dx*rho0
+        - lambda: 0.01
+        - nu0: 0.1
+        - b: 0.03
+        - T1: 0
+        - T2: 100
+        - v1: 0
+        - v2: 1
+      variables: 
+        - dt: 0.001
+        - Time: 0
+      particle_system: 
+        domain: 
+          cell_size: csize
+          minimum: -L/csize/2-1
+          maximum: L/csize/2+1
+          boundary: periodic
+        grid: 
+          gid: 1
+          gpos: -L/2-csize+dx/2
+          gsize: csize
+          goffset: 0
+          gip_dist: dx
+        grid: 
+          gid: 0
+          gpos: -L/2+dx/2
+          gsize: L-dx
+          goffset: 0
+          gip_dist: dx
+        grid: 
+          gid: 2
+          gpos: L/2-dx/2
+          gsize: csize
+          goffset: 0
+          gip_dist: dx
+      fields: 
+        - a: 0
+        - v: if(eq(0,gid),0,if(eq(gid,1),v1,v2))
+        - T: if(eq(0,gid),0,if(eq(gid,1),T1,T2))
+        - T_dot: 0
+        - nu: 0.1
+    equations: 
+      - time: Time=Time+dt
+      - heat: T_dot=lambda*sph_L0(T,mass,rho0,Wp32210,csize)
+        condition: eq(gid,0)
+      - temp: T=euler(T,T_dot,dt)
+        condition: eq(gid,0)
+      - viscosity: nu=nu0*exp(-b*T)
+      - moment: a=sph_L1(nu,v,mass,rho0,Wp32210,csize)
+        condition: eq(gid,0)
+      - vel: v=euler(v,a,dt)
+        condition: eq(gid,0)
+  parameter_space: 
+    simulated_time: 100
+    print_interval: 1
+    confirm_on_exit: false
+    output_format: BINARY
 \end{lstlisting}
 \end{example}
 Since the initial conditions for both the temperature and velocity are uniform, the solution of the discretized equations needs to be repeated until the result is sufficiently formed. In this case the simulated time is $100$ s. The final result is compared with the analytical solution in Figure \ref{fig:couette_results}.
@@ -1507,61 +1563,49 @@ The numerical scheme to discretize the system \equref{eq:cahnhilliard} is chosen
 where again, $W_{ij}$ is normalized in two dimensions. The configuration file to solve \equref{eq:cahnhilliard_sph_discretized} is
 \begin{example}{Cahn-Hilliard configuration file}{}
 \lstset{basicstyle=\tiny}
-\begin{lstlisting}[language=XML]
-<?xml version="1.0" encoding="UTF-8"?>
-<simulation>
-  <case>
-    <workspace>
-      <constants>
-        <L value="2"/>
-        <dx value="0.0675"/>
-        <csize value="dx*2.1"/>
-        <rho0 value="1000"/>
-        <mass value="dx^2*rho0"/>
-        <D value="0.003"/>
-        <CFL value="0.1"/>
-        <gamma value="(csize/3)^2"/>
-        <dt_g value="gamma/csize^2"/>
-      </constants>
-      <variables>
-        <dt value="0.003"/>
-        <Time value="0"/>
-        <print_interval value="dt"/> <!-- Variable printing interval -->
-      </variables>
-      <fields>
-        <c value="rand(-1,1)"/> <!-- Initial condition -->
-        <c_dot value="0"/>
-        <mu value="0"/>
-      </fields>
-      <particle_system>
-        <domain>
-          <cell_size value="csize"/>
-          <minimum value="-15|-15|-15"/>
-          <maximum value="15|15|15"/>
-          <boundary value="0|0|0"/>
-        </domain>
-        <grid>
-          <gid value="0"/>  <!-- Read particle positions from file -->
-          <file value="points.xyz"/>
-        </grid>
-      </particle_system>
-    </workspace>
-      <equations>
-        <time value="Time=Time+dt"/>
-        <chemical_potential value="mu=c^3-c-gamma*sph_L0(c,mass,rho0,Wp32220,csize)"/>
-        <Cahn_Hilliard value="c_dot=D*sph_L0(mu,mass,rho0,Wp32220,csize)"/>
-        <integration value="c=euler(c,c_dot,dt)"/>
-        <new_dt value="dt=CFL*min(1/fmax(c_dot),dt_g)"/> <!-- Adaptive time stepping -->
-        <print value="print_interval=exp(Time/45)"/> <!-- Modify printing interval -->
-      </equations>
-  </case>
-  <parameter_space>
-    <simulated_time value="150"/>
-    <print_interval value="0.001"/>
-    <confirm_on_exit value="false"/>
-    <output_format value="BINARY"/>
-  </parameter_space>
-</simulation>
+\begin{lstlisting}[language=YAML]
+simulation:
+  case:
+    workspace:
+      constants:
+        - L: 2
+        - dx: 0.0675
+        - csize: dx*2.1
+        - rho0: 1000
+        - mass: dx^2*rho0
+        - D: 0.003
+        - CFL: 0.1
+        - gamma: (csize/3)^2
+        - dt_g: gamma/csize^2
+      variables:
+        - dt: 0.003
+        - Time: 0
+        - print_interval: dt
+      particle_system:
+        domain:
+          cell_size: csize|csize|csize
+          minimum: -15|-15|-15
+          maximum: 15|15|15
+          boundary: 0|0|0
+        grid:
+          gid: 0
+          file: points.xyz
+      fields:
+        - c: rand(-1,1)
+        - c_dot: 0
+        - mu: 0
+    equations:
+      - time: Time=Time+dt
+      - chemical_potential: mu=c^3-c-gamma*sph_L0(c,mass,rho0,Wp32220,csize)
+      - Cahn_Hilliard: c_dot=D*sph_L0(mu,mass,rho0,Wp32220,csize)
+      - integration: c=euler(c,c_dot,dt)
+      - new_dt: dt=CFL*min(1/fmax(c_dot),dt_g)
+      - print: print_interval=exp(Time/45)
+  parameter_space:
+    simulated_time: 150
+    print_interval: 0.001
+    confirm_on_exit: false
+    output_format: BINARY
 \end{lstlisting}
 \end{example}
 The phase separation process has a decaying intensity in the function of time, therefore the printing interval is adaptively modified with an exponential law to minimize the amount of simulation result files and keep the temporal sampling appropriate at the same time. The evolution of phase separation is shown in Figure \ref{fig:cahnhilliard_result} by the triangulation of the surface.
@@ -1628,69 +1672,57 @@ where $f^c$ denotes the collection of the collision laws introduced in Section \
 During the simulation the tank position, velocity and acceleration has to be calculated at each time steps. These quantities are considered as variables and calculated by the numerical solution of \equref{eq:tank_ode}. The configuration file for the particle damper problem is as follows:
 \begin{example}{Particle damper configuration file}{}
 \lstset{basicstyle=\tiny}
-\begin{lstlisting}[language=XML]
-<<?xml version="1.0" encoding="UTF-8"?>
-<simulation>
-  <case>
-    <workspace>
-      <constants>
-        <L value="0.1"/>
-        <csize value="0.01"/>
-        <R value="0.004"/>
-        <mass value="7850*4/3*R^3*pi"/>
-        <E value="2.06e6"/>
-        <nu value="0.33"/>
-        <M value="20"/>
-        <freq value="10"/>
-        <gamma value="10*2*pi"/>
-        <S value="gamma^2*M"/>
-        <g value="0|0|-9.81"/>
-      </constants>
-      <variables>
-        <T value="0"/>
-        <dt value="5e-4"/>
-        <A value="0"/>
-        <V value="0"/>
-        <Z value="-0.05"/>
-      </variables>
-      <particle_system>
-        <domain>
-          <cell_size value="csize"/>
-          <minimum value="-L/2/csize|-L/2/csize|-L/2/csize"/>
-          <maximum value="L/2/csize|L/2/csize|L/2/csize"/>
-          <boundary value="symmetric|symmetric|symmetric"/>
-        </domain>
-        <grid>
-          <gid value="0"/> <!-- Spheres initial positions -->
-          <gpos value="-9*R|-9*R|-L/2"/>
-          <gsize value="18*R|18*R|14*R"/>
-          <goffset value="R|R|R"/>
-          <gip_dist value="2*R|2*R|2*R"/>
-        </grid>
-      </particle_system>
-      <fields>
-        <a value="0|0|0"/>
-        <v value="rand(-0.2,0.2)|rand(-0.2,0.2)|rand(-0.2,0.2)"/>
-        <om value="0|0|0"/>
-      </fields>
-    </workspace>
-      <equations>
-        <time value="T=T+dt"/>
-        <eq value="a=dem_l(v,om,R,mass,E,nu,0.1)/mass"/>
-        <tank_acceleration value="A=(-transpose(fsum(a)*mass)*e_k-S*Z)/M"/>
-        <iv value="v=euler(v,a+g-A*e_k,dt)"/>
-        <ia value="r=euler(r,v,dt)"/>
-        <tank_velocity value="V=euler(V,A,dt)"/>
-        <tank_position value="Z=euler(Z,V,dt)"/>
-      </equations>
-  </case>
-  <parameter_space>
-    <simulated_time value="1"/>
-    <print_interval value="10*dt"/>
-    <confirm_on_exit value="0"/>
-    <output_format value="ASCII"/>
-  </parameter_space>
-</simulation>
+\begin{lstlisting}[language=YAML]
+simulation:
+  case:
+    workspace:
+      constants:
+        - L: 0.1
+        - csize: 0.01
+        - R: 0.004
+        - mass: 7850*4/3*R^3*pi
+        - E: 2.06e6
+        - nu: 0.33
+        - M: 20
+        - freq: 10
+        - gamma: 10*2*pi
+        - S: gamma^2*M
+        - g: 0|0|-9.81
+      variables:
+        - T: 0
+        - dt: 5e-4
+        - A: 0
+        - V: 0
+        - Z: -0.05
+      particle_system:
+        domain:
+          cell_size: csize|csize|csize
+          minimum: -L/2/csize|-L/2/csize|-L/2/csize
+          maximum: L/2/csize|L/2/csize|L/2/csize
+          boundary: symmetric|symmetric|symmetric
+        grid:
+          gid: 0
+          gpos: -9*R|-9*R|-L/2
+          gsize: 18*R|18*R|14*R
+          goffset: R|R|R
+          gip_dist: 2*R|2*R|2*R
+      fields:
+        - a: 0|0|0
+        - v: rand(-0.2,0.2)|rand(-0.2,0.2)|rand(-0.2,0.2)
+        - om: 0|0|0
+    equations:
+      - time: T=T+dt
+      - eq: a=dem_l(v,om,R,mass,E,nu,0.1)/mass
+      - tank_acceleration: A=(-transpose(fsum(a)*mass)*e_k-S*Z)/M
+      - iv: v=euler(v,a+g-A*e_k,dt)
+      - ia: r=euler(r,v,dt)
+      - tank_velocity: V=euler(V,A,dt)
+      - tank_position: Z=euler(Z,V,dt)
+  parameter_space:
+    simulated_time: 1
+    print_interval: 10*dt
+    confirm_on_exit: 0
+    output_format: ASCII
 \end{lstlisting}
 \end{example}
 After running the configuration file in Nauticle the individual particle elevations are visualized in Figure \ref{fig:particle_damper_result} together with the bottom and top positions of the tank.
@@ -1749,72 +1781,59 @@ The simulation is executed using the configuration file below:
 \begin{samepage}
 \begin{example}{Shear layer configuration file}{}
 \lstset{basicstyle=\tiny}
-\begin{lstlisting}[language=XML]
-<?xml version="1.0" encoding="UTF-8"?>
-<simulation>
-  <case>
-    <workspace>
-      <constants>
-        <L value="5"/>
-        <c_s value="L/2"/>
-        <dx value="L/50"/>
-        <omega value="0.3"/>
-        <eps value="c_s/30"/>
-      </constants>
-      <variables>
-        <T value="0"/>
-        <dt value="0.02"/>
-      </variables>
-      <particle_system>
-        <domain>
-          <cell_size value="c_s"/>
-          <minimum value="0|0"/>
-          <maximum value="L/c_s|L/c_s"/>
-          <boundary value="periodic|symmetric"/>
-        </domain>
-        <grid>
-          <gid value="-1"/> <!-- Bottom vortex pattern -->
-          <gpos value="0|L/2-3*dx-dx/2"/>
-          <gsize value="L|dx"/>
-          <goffset value="0|0"/>
-          <gip_dist value="dx/2|dx"/>
-        </grid>
-        <grid>
-          <gid value="0"/> <!-- Tracer particles -->
-          <gpos value="0|L/2-dx/2"/>
-          <gsize value="L|dx"/>
-          <goffset value="0|0"/>
-          <gip_dist value="dx/5|dx"/>
-        </grid>
-        <grid>
-          <gid value="1"/> <!-- Top vortex pattern -->
-          <gpos value="0|L/2+3*dx-dx/2"/>
-          <gsize value="L|dx"/>
-          <goffset value="0|0"/>
-          <gip_dist value="dx/2|dx"/>
-        </grid>
-      </particle_system>
-      <fields>
-        <w value="gid*omega" symmetric="false"/>
-        <v value="0|0"/>
-        <noise value="sin(elem(r,0,0)*25/pi)*dx*1e-2*e_j"/>
-      </fields>
-    </workspace>
-      <equations>
-        <initial_noise value="r=r+noise" condition="eq(T,0)"/>
-        <time value="T=T+dt"/>
-        <velocity value="v=dvm(w,eps)"/>
-        <integrate value="r=euler(r,v,dt)"/>
-      </equations>
-  </case>
-  <parameter_space>
-    <simulated_time value="1.8"/>
-    <print_interval value="dt"/>
-    <confirm_on_exit value="0"/>
-    <file_start value="0"/>
-    <output_format value="ASCII"/>
-  </parameter_space>
-</simulation>
+\begin{lstlisting}[language=YAML]
+simulation:
+  case:
+    workspace:
+      constants:
+        - L: 5
+        - c_s: L/2
+        - dx: L/50
+        - omega: 0.3
+        - eps: c_s/30
+      variables:
+        - T: 0
+        - dt: 0.02
+      particle_system:
+        domain:
+          cell_size: c_s|c_s
+          minimum: 0|0
+          maximum: L/c_s|L/c_s
+          boundary: periodic|symmetric
+        grid:
+          gid: -1 # Bottom vortex pattern
+          gpos: 0|L/2-3*dx-dx/2
+          gsize: L|dx
+          goffset: 0|0
+          gip_dist: dx/2|dx
+        grid:
+          gid: 0 # Tracer particles
+          gpos: 0|L/2-dx/2
+          gsize: L|dx
+          goffset: 0|0
+          gip_dist: dx/5|dx
+        grid:
+          gid: 1 # Top vortex pattern
+          gpos: 0|L/2+3*dx-dx/2
+          gsize: L|dx
+          goffset: 0|0
+          gip_dist: dx/2|dx
+      fields:
+        - w: gid*omega
+          symmetric: false
+        - v: 0|0
+        - noise: sin(elem(r,0,0)*25/pi)*dx*1e-2*e_j
+    equations:
+      - initial_noise: r=r+noise
+        condition: eq(T,0)
+      - time: T=T+dt
+      - velocity: v=dvm(w,eps)
+      - integrate: r=euler(r,v,dt)
+  parameter_space:
+    simulated_time: 1.8
+    print_interval: dt
+    confirm_on_exit: 0
+    output_format: ASCII
 \end{lstlisting}
 \end{example}
 \end{samepage}
@@ -1908,19 +1927,15 @@ The simulation can be run using the configuration file below:
 \begin{samepage}
 \begin{example}{Solar system configuration file}{}
 \lstset{basicstyle=\tiny}
-\begin{lstlisting}[language=XML]
-<?xml version="1.0" encoding="UTF-8"?>
-<simulation>
-  <initial_condition>
-    <file value="solar_system.vtk"/> <!-- Read initial conditions from file -->
-  </initial_condition>
-  <parameter_space>
-    <simulated_time value="365.25*1000"/> <!-- Simulate 1000 years -->
-    <print_interval value="365.25"/> <!-- Print results in every year -->
-    <confirm_on_exit value="0"/>
-    <output_format value="ASCII"/>
-  </parameter_space>
-</simulation>
+\begin{lstlisting}[language=YAML]
+simulation:
+  initial_condition:
+    file: solar_system.vtk # Read initial conditions from file
+  parameter_space:
+    simulated_time: 365.25*1000 # Simulate 1000 years
+    print_interval: 365.25 # Print results in every year
+    confirm_on_exit: 0
+    output_format: ASCII
 \end{lstlisting}
 \end{example}
 \end{samepage}
@@ -1970,95 +1985,81 @@ Assuming the parameters of Table \ref{tbl:dam_break_params}, the following confi
 \begin{samepage}
 \begin{example}{Dam break configuration file}{}
 \lstset{basicstyle=\tiny}
-\begin{lstlisting}[language=XML]
-<?xml version="1.0" encoding="UTF-8"?>
-<simulation>
-  <case>
-    <workspace>
-      <constants>
-        <Lx value="2"/>
-        <Ly value="1"/>
-        <H value="1"/>
-        <W value="H/2"/>
-        <csize value="Lx/56"/>
-        <dx value="csize/2.1"/>
-        <h value="csize/2"/>
-        <rho0 value="1000"/>
-        <mass value="dx^2*rho0"/>
-        <g value="0|-9.81"/>
-        <c value="10*sqrt(H*magnitude(g))"/>
-        <fluid value="0"/>
-        <wall value="1"/>
-        <CFL value="0.2"/>
-      </constants>
-      <variables>
-        <dt value="0.0001"/>
-        <T value="0"/>
-      </variables>
-      <particle_system>
-        <domain>
-          <cell_size value="csize"/>
-          <minimum value="-Lx/2/csize-1|-Ly/2/csize-1"/>
-          <maximum value="Lx/2/csize+1|2*Ly/csize"/>
-          <boundary value="0|0"/>
-        </domain>
-        <grid>
-          <gid value="fluid"/>
-          <gpos value="-Lx/2|-Ly/2"/>
-          <gsize value="W|H"/>
-          <goffset value="0|0"/>
-          <gip_dist value="dx|dx"/>
-        </grid>
-        <grid>
-          <gid value="wall"/>
-          <gpos value="-Lx/2-csize|-Ly/2-csize"/>
-          <gsize value="csize|Ly+2*csize"/>
-          <goffset value="0|0"/>
-          <gip_dist value="dx|dx"/>
-        </grid>
-        <grid>
-          <gid value="wall"/>
-          <gpos value="-Lx/2|-Ly/2-csize"/>
-          <gsize value="Lx|csize"/>
-          <goffset value="0|0"/>
-          <gip_dist value="dx|dx"/>
-        </grid>
-        <grid>
-          <gid value="wall"/>
-          <gpos value="Lx/2|-Ly/2-csize"/>
-          <gsize value="csize|Ly+2*csize"/>
-          <goffset value="0|0"/>
-          <gip_dist value="dx|dx"/>
-        </grid>
-      </particle_system>
-      <fields>
-        <a value="0|0"/>
-        <v value="0|0"/>
-        <rho value="if(eq(gid,fluid),elem(g,1,0)*rho0*(elem(r,1,0)-H+Ly/2)/c^2+rho0,rho0)"/>
-        <rho_dot value="0"/>
-        <p value="0"/>
-      </fields>
-    </workspace>
-      <equations>
-        <time value="T=T+dt"/>
-        <cont value="rho_dot=-rho*sph_D00(v,mass,rho,Wp52220,csize)"/>
-        <delta_sph value="rho_dot=rho_dot+0.1*c*h*sph_L0(rho,mass,rho,Wp52220,csize)"/>
-        <irho0 value="rho=euler(rho,rho_dot,dt)"/>
-        <EOS0 value="p=c^2*(rho-rho0)"/>
-        <acc0 value="a=-1/rho*sph_G11(p,mass,rho,Wp32220,csize)+g"/>
-        <viscosity value="a=a+0.005*sph_L0(v,mass,rho,Wp32220,csize)"/>
-        <vel0 value="v=euler(v,a,dt)" condition="eq(gid,fluid)"/>
-        <pos0 value="r=euler(r,v,dt)" condition="eq(gid,fluid)"/>
-        <new_dt value="dt=CFL*min(sqrt(h/fmax(magnitude(a))),h/c)"/>
-      </equations>
-  </case>
-  <parameter_space>
-    <simulated_time value="2"/>
-    <print_interval value="0.02"/>
-    <confirm_on_exit value="0"/>
-    <output_format value="ASCII"/>
-  </parameter_space>
-</simulation>
+\begin{lstlisting}[language=YAML]
+simulation:
+  case:
+    workspace:
+      constants:
+        - Lx: 2
+        - Ly: 1
+        - H: 0.4
+        - W: H*2
+        - csize: Lx/100
+        - dx: csize/2.1
+        - h: csize/2
+        - rho0: 1000
+        - mass: dx^2*rho0
+        - g: 0|-9.81
+        - c: 10*sqrt(H*magnitude(g))
+        - fluid: 0
+        - wall: 1
+        - CFL: 0.2
+      variables:
+        - dt: 0.0001
+        - T: 0
+      particle_system:
+        domain:
+          cell_size: csize|csize
+          minimum: -Lx/2/csize-1|-Ly/2/csize-1
+          maximum: Lx/2/csize+1|2*Ly/csize
+          boundary: 0|0
+        grid:
+          gid: fluid
+          gpos: -Lx/2|-Ly/2
+          gsize: W|H
+          goffset: 0|0
+          gip_dist: dx|dx
+        grid:
+          gid: wall
+          gpos: -Lx/2-csize|-Ly/2-csize
+          gsize: csize|Ly+2*csize
+          goffset: 0|0
+          gip_dist: dx|dx
+        grid:
+          gid: wall
+          gpos: -Lx/2|-Ly/2-csize
+          gsize: Lx|csize
+          goffset: 0|0
+          gip_dist: dx|dx
+        grid:
+          gid: wall
+          gpos: Lx/2|-Ly/2-csize
+          gsize: csize|Ly+2*csize
+          goffset: 0|0
+          gip_dist: dx|dx
+      fields:
+        - a: 0|0
+        - v: 0|0
+        - rho: if(eq(gid,fluid),elem(g,1,0)*rho0*(elem(r,1,0)-H+Ly/2)/c^2+rho0,rho0)
+        - rho_dot: 0
+        - p: 0
+    equations:
+      - time: T=T+dt
+      - cont: rho_dot=-rho*sph_D00(v,mass,rho,Wp52220,csize)
+      - delta_sph: rho_dot=rho_dot+0.1*c*h*sph_L0(rho,mass,rho,Wp52220,csize)
+      - irho0: rho=euler(rho,rho_dot,dt)
+      - EOS0: p=c^2*(rho-rho0)
+      - acc0: a=-1/rho*(sph_G11(p,mass,rho,Wp32220,csize)+sph_T(dx,p,mass,rho,Wp32220,csize))+0.1*c*h*sph_A(v,mass,rho,Wp32220,csize)+g
+      - vel0: v=euler(v,a,dt)
+        condition: eq(gid,fluid)
+      - pos0: r=euler(r,v,dt)
+        condition: eq(gid,fluid)
+      - new_dt: dt=CFL*min(sqrt(h/fmax(magnitude(a))),h/c)
+  parameter_space:
+    simulated_time: 2
+    print_interval: 0.02
+    confirm_on_exit: 0
+    output_format: ASCII
 \end{lstlisting}
 \end{example}
 \end{samepage}
@@ -2128,79 +2129,71 @@ The Dirichlet-conditions \equref{eq:stefan_problem_bc} are simply constrained in
 \begin{samepage}
 \begin{example}{Stefan-problem configuration file}{}
 \lstset{basicstyle=\tiny}
-\begin{lstlisting}[language=XML]
-<?xml version="1.0" encoding="UTF-8"?>
-<simulation>
-  <case>
-    <workspace>
-      <constants>
-        <L value="1"/>
-        <csize value="L/50"/>
-        <dx value="csize/2.1"/>
-        <rho0 value="1000"/>
-        <mass value="dx*rho0"/>
-        <a_liquid value="0.002"/>
-        <a_solid value="0.005"/>
-        <wall value="0"/>
-        <liquid value="1"/>
-        <interface value="2"/>
-        <solid value="3"/>
-      </constants>
-      <variables>
-        <Time value="0"/>
-        <dt value="0.01"/>
-        <S value="dx*4"/>
-        <S_dot value="0"/>
-      </variables>
-      <particle_system>
-        <domain>
-          <cell_size value="csize"/>
-          <minimum value="-1"/>
-          <maximum value="L/csize+1"/>
-          <boundary value="0"/>
-        </domain>
-        <grid>
-          <gid value="solid"/>
-          <gpos value="0"/>
-          <gsize value="L"/>
-          <goffset value="0"/>
-          <gip_dist value="dx"/>
-        </grid>
-        <grid>
-          <gid value="wall"/>
-          <gpos value="-csize"/>
-          <gsize value="csize"/>
-          <goffset value="0"/>
-          <gip_dist value="dx"/>
-        </grid>
-      </particle_system>
-      <fields>
-        <T value="if(eq(gid,wall),0.2,-0.1)"/>
-        <T_dot value="0"/>
-        <x value="elem(r,0,0)"/>
-      </fields>
-    </workspace>
-      <equations>
-        <mb1 value="gid=interface" condition="and(gt(x,S-dx/2),lt(x,S+dx/2))"/>
-        <mb2 value="gid=liquid" condition="and(lt(x,S-dx/2-0.01),not(eq(gid,wall)))"/>
-        <mb3 value="gid=solid" condition="gt(x,S+dx/2)"/>
-        <bc1 value="T=0" condition="eq(gid,interface)"/>
-        <liquid value="T_dot=a_liquid*sph_L0(T,mass,rho0,Wp22210,csize)" condition="eq(gid,liquid)"/>
-        <solid value="T_dot=a_solid*sph_L0(T,mass,rho0,Wp22210,csize)" condition="eq(gid,solid)"/>
-        <i1 value="T=euler(T,T_dot,dt)"/>
-        <sdot value="S_dot=-sph_G00(if(neq(gid,solid),T,0),mass,rho0,Wp22210,csize)"/>
-        <eq2 value="S_dot=fmax(if(eq(gid,interface),S_dot,0))"/>
-        <i2 value="S=euler(S,S_dot,dt)"/>
-        <time value="Time=Time+dt"/>
-      </equations>
-  </case>
-  <parameter_space>
-    <simulated_time value="40"/>
-    <print_interval value="50*dt"/>
-    <confirm_on_exit value="0"/>
-    <output_format value="ASCII"/>
-  </parameter_space>
-</simulation>
+\begin{lstlisting}[language=YAML]
+simulation:
+  case:
+    workspace:
+      constants:
+        - L: 1
+        - csize: L/50
+        - dx: csize/2.1
+        - rho0: 1000
+        - mass: dx*rho0
+        - a_liquid: 0.002
+        - a_solid: 0.005
+        - wall: 0
+        - liquid: 1
+        - interface: 2
+        - solid: 3
+      variables:
+        - Time: 0
+        - dt: 0.01
+        - S: dx*4
+        - S_dot: 0
+      particle_system:
+        domain:
+          cell_size: csize
+          minimum: -1
+          maximum: L/csize+1
+          boundary: 0
+        grid:
+          gid: solid
+          gpos: 0
+          gsize: L
+          goffset: 0
+          gip_dist: dx
+        grid:
+          gid: wall
+          gpos: -csize
+          gsize: csize
+          goffset: 0
+          gip_dist: dx
+      fields:
+        - T: if(eq(gid,wall),0.2,-0.1)
+        - T_dot: 0
+        - x: elem(r,0,0)
+    equations:
+      - mb1: gid=interface
+        condition: and(gt(x,S-dx/2),lt(x,S+dx/2))
+      - mb2: gid=liquid
+        condition: and(lt(x,S-dx/2-0.01),not(eq(gid,wall)))
+      - mb3: gid=solid
+        condition: gt(x,S+dx/2)
+      - bc1: T=0
+        condition: eq(gid,interface)
+      - liquid: T_dot=a_liquid*sph_L0(T,mass,rho0,Wp22210,csize)
+        condition: eq(gid,liquid)
+      - solid: T_dot=a_solid*sph_L0(T,mass,rho0,Wp22210,csize)
+        condition: eq(gid,solid)
+      - i1: T=euler(T,T_dot,dt)
+      - eq2: S_dot=fmax(if(eq(gid,interface),-sph_G00(if(neq(gid,solid),T,0),mass,rho0,Wp22210,csize),0))
+      - i2: S=euler(S,S_dot,dt)
+      - time: Time=Time+dt
+  parameter_space:
+    simulated_time: 40
+    print_interval: 50*dt
+    confirm_on_exit: 0
+    output_format: ASCII
 \end{lstlisting}
 \end{example}
 \end{samepage}
@@ -2253,96 +2246,98 @@ Running the following configuration file
 \begin{samepage}
 \begin{example}{Evacuation configuration file}{}
 \lstset{basicstyle=\tiny}
-\begin{lstlisting}[language=XML]
-<?xml version="1.0" encoding="UTF-8"?>
-<simulation>
-  <case>
-    <workspace>
-      <constants>
-        <L value="40"/>
-        <c_s value="1"/>
-        <dx value="1"/>
-        <k value="1000"/>
-        <d1 value="-13.5|10"/>
-        <d2 value="-6|10"/>
-        <d3 value="9|14.5"/>
-        <d4 value="13.5|10"/>
-        <d5 value="-6|8"/>
-        <d6 value="0|8"/>
-        <d7 value="6|8"/>
-        <d8 value="-9|9"/>
-        <d9 value="9|9"/>
-        <d10 value="-12|0"/>
-        <d11 value="12|0"/>
-        <d12 value="0|-10"/>
-        <R_w value="0.1"/>
-      </constants>
-      <variables>
-        <T value="0"/>
-        <dt value="0.01"/>
-      </variables>
-      <particle_system>
-        <domain>
-          <cell_size value="c_s"/>
-          <minimum value="-L/c_s|-L/c_s"/>
-          <maximum value="L/c_s|L/c_s"/>
-          <boundary value="periodic|periodic"/>
-        </domain>
-        <grid>
-          <gid value="2"/>
-          <file value="walls.xyz"/>
-        </grid>
-        <grid>
-          <gid value="1"/>
-          <file value="people.xyz"/>
-        </grid>
-      </particle_system>
-      <fields>
-        <A value="10"/>
-        <B value="0.2"/>
-        <c value="0.1"/>
-        <m value="rand(50,100)"/>
-        <p0 value="0|0"/>
-        <v0 value="if(eq(gid,1),rand(2,4),0)"/>
-        <tau value="2"/>
-        <R value="if(eq(gid,2),R_w,0.002*m+0.15)"/>
-        <a value="0|0"/>
-        <v value="0|0"/>
-        <x value="elem(r,0,0)"/>
-        <y value="elem(r,1,0)"/>
-      </fields>
-    </workspace>
-      <equations>
-        <time value="T=T+dt"/>
-        <pos_x value="x=elem(r,0,0)" condition="eq(gid,1)"/>
-        <pos_y value="y=elem(r,1,0)" condition="eq(gid,1)"/>
-        <wp_1 value="p0=if(and(lt(x,-9),gt(y,10)),d1,p0)" condition="eq(gid,1)"/>
-        <wp_2 value="p0=if(and(and(gt(x,-9),lt(x,-3)),gt(y,10)),d2,p0)" condition="eq(gid,1)"/>
-        <wp_3 value="p0=if(and(and(gt(x,-3),lt(x,9)),gt(y,10)),d3,p0)" condition="eq(gid,1)"/>
-        <wp_4 value="p0=if(and(gt(x,9),gt(y,10)),d4,p0)" condition="eq(gid,1)"/>
-        <wp_5 value="p0=if(and(and(gt(x,-9),lt(x,-3)),lt(y,8)),d5,p0)" condition="eq(gid,1)"/>
-        <wp_6 value="p0=if(and(and(gt(x,-3),lt(x,3)),lt(y,8)),d6,p0)" condition="eq(gid,1)"/>
-        <wp_7 value="p0=if(and(and(gt(x,3),lt(x,9)),lt(y,8)),d7,p0)" condition="eq(gid,1)"/>
-        <wp_8 value="p0=if(and(and(gt(x,-9),lt(x,0)),and(gt(y,8),lt(y,10))),d8,p0)" 
-        condition="eq(gid,1)"/>
-        <wp_9 value="p0=if(and(and(gt(x,0),lt(x,9)),and(gt(y,8),lt(y,10))),d9,p0)" 
-        condition="eq(gid,1)"/>
-        <wp_10 value="p0=if(and(lt(x,-9),lt(y,10)),d10,p0)" condition="eq(gid,1)"/>
-        <wp_11 value="p0=if(and(gt(x,9),lt(y,10)),d11,p0)" condition="eq(gid,1)"/>
-        <wp_12 value="p0=if(lt(y,0),d12,p0)" condition="eq(gid,1)"/>
-        <acceleration value="v=sfm(v,p0,v0,m,R,A,B,k,c,tau)" condition="eq(gid,1)"/>
-        <velocity value="v=euler(v,a,dt)" condition="eq(gid,1)"/>
-        <position value="r=euler(r,v,dt)" condition="eq(gid,1)"/>
-      </equations>
-  </case>
-  <parameter_space>
-    <simulated_time value="60"/>
-    <print_interval value="0.1"/>
-    <confirm_on_exit value="0"/>
-    <file_start value="0"/>
-    <output_format value="ASCII"/>
-  </parameter_space>
-</simulation>
+\begin{lstlisting}[language=YAML]
+simulation:
+  case:
+    workspace:
+      constants:
+        - L: 40
+        - c_s: 1
+        - dx: 1
+        - k: 1000
+        - d1: -13.5|10
+        - d2: -6|10
+        - d3: 9|14.5
+        - d4: 13.5|10
+        - d5: -6|8
+        - d6: 0|8
+        - d7: 6|8
+        - d8: -9|9
+        - d9: 9|9
+        - d10: -12|0
+        - d11: 12|0
+        - d12: 0|-10
+        - R_w: 0.1
+      variables:
+        - T: 0
+        - dt: 0.01
+      particle_system:
+        domain:
+          cell_size: c_s|c_s
+          minimum: -L/c_s|-L/c_s
+          maximum: L/c_s|L/c_s
+          boundary: periodic|periodic
+        grid:
+          gid: 2
+          file: walls.xyz
+        grid:
+          gid: 1
+          file: people.xyz
+      fields:
+        - A: 10
+        - B: 0.2
+        - c: 0.1
+        - m: rand(50,100)
+        - p0: 0|0
+        - v0: if(eq(gid,1),rand(2,4),0)
+        - tau: 2
+        - R: if(eq(gid,2),R_w,0.002*m+0.15)
+        - a: 0|0
+        - v: 0|0
+        - x: elem(r,0,0)
+        - y: elem(r,1,0)
+    equations:
+      - time: T=T+dt
+      - pos_x: x=elem(r,0,0)
+        condition: eq(gid,1)
+      - pos_y: y=elem(r,1,0)
+        condition: eq(gid,1)
+      - wp_1: p0=if(and(lt(x,-9),gt(y,10)),d1,p0)
+        condition: eq(gid,1)
+      - wp_2: p0=if(and(and(gt(x,-9),lt(x,-3)),gt(y,10)),d2,p0)
+        condition: eq(gid,1)
+      - wp_3: p0=if(and(and(gt(x,-3),lt(x,9)),gt(y,10)),d3,p0)
+        condition: eq(gid,1)
+      - wp_4: p0=if(and(gt(x,9),gt(y,10)),d4,p0)
+        condition: eq(gid,1)
+      - wp_5: p0=if(and(and(gt(x,-9),lt(x,-3)),lt(y,8)),d5,p0)
+        condition: eq(gid,1)
+      - wp_6: p0=if(and(and(gt(x,-3),lt(x,3)),lt(y,8)),d6,p0)
+        condition: eq(gid,1)
+      - wp_7: p0=if(and(and(gt(x,3),lt(x,9)),lt(y,8)),d7,p0)
+        condition: eq(gid,1)
+      - wp_8: p0=if(and(and(gt(x,-9),lt(x,0)),and(gt(y,8),lt(y,10))),d8,p0)
+        condition: eq(gid,1)
+      - wp_9: p0=if(and(and(gt(x,0),lt(x,9)),and(gt(y,8),lt(y,10))),d9,p0)
+        condition: eq(gid,1)
+      - wp_10: p0=if(and(lt(x,-9),lt(y,10)),d10,p0)
+        condition: eq(gid,1)
+      - wp_11: p0=if(and(gt(x,9),lt(y,10)),d11,p0)
+        condition: eq(gid,1)
+      - wp_12: p0=if(lt(y,0),d12,p0)
+        condition: eq(gid,1)
+      - acceleration: v=sfm(v,p0,v0,m,R,A,B,k,c,tau)
+        condition: eq(gid,1)
+      - velocity: v=euler(v,a,dt)
+        condition: eq(gid,1)
+      - position: r=euler(r,v,dt)
+        condition: eq(gid,1)
+  parameter_space:
+    simulated_time: 60
+    print_interval: 0.1
+    confirm_on_exit: 0
+    file_start: 0
+    output_format: ASCII
 \end{lstlisting}
 \end{example}
 \end{samepage}
@@ -2443,7 +2438,7 @@ Declares / definesthe class for reading initial conditions from VTK files.
 \textbf{pmVTK\_writer.h / pmVTK\_writer.cpp} \\
 Declares / defines class for writing results to VTK files.
 
-\textbf{pmXML\_processor.h / pmXML\_processor.cpp} \\
+\textbf{pmYAML\_processor.h / pmYAML\_processor.cpp} \\
 Declares / defines the class that reads the configuration file and generates the simulation case based on it.
 
 \textbf{pmLog\_stream.h / pmLog\_stream.cpp} \\
