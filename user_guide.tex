@@ -1,5 +1,5 @@
 \newcommand{\nauticleversion}{1.0.180207}
-\newcommand{\installer}{install-\nauticleversion{}.sh}
+\newcommand{\installer}{install\_\nauticleversion{}.sh}
 \newcommand{\execname}{\textbf{nauticle}}
 
 \documentclass[a4paper,12pt,openany]{book}
@@ -422,14 +422,14 @@ Employing the differential operators (\ref{corrected_diffop1}-\ref{secondorder_d
 
 Further SPH operators are implemented in Nauticle to cover the most frequently applied SPH-models. The first and most important one of them is the artificial viscosity term (operating on the velocity field) written as
 \begin{flalign} \label{eq:AV_op}
-   \frac{d\textbf{v}^{av}_i}{dt}=\sum_{j}{\Pi_{ij}m_j\nabla W(\textbf{r}_i-\textbf{r}_j,\sigma)}
+   \frac{d\textbf{v}^{av}_i}{dt}=\sum_{j}{\Pi_{ij}\frac{m_j}{\rho_j}\nabla W(\textbf{r}_i-\textbf{r}_j,\sigma)}
 \end{flalign}
 where
 % \[
 \begin{equation}
     \Pi_{ij}= 
 \begin{cases}
-  \frac{(\textbf{v}_j-\textbf{v}_i)(\textbf{r}_j-\textbf{r}_i)}{\rho_j\norm{\textbf{r}_j-\textbf{r}_i}} & \text{if } (\textbf{v}_j-\textbf{v}_i)(\textbf{r}_j-\textbf{r}_i) < 0, \\
+  \frac{(\textbf{v}_j-\textbf{v}_i)(\textbf{r}_j-\textbf{r}_i)}{\norm{\textbf{r}_j-\textbf{r}_i}} & \text{if } (\textbf{v}_j-\textbf{v}_i)(\textbf{r}_j-\textbf{r}_i) < 0, \\
   0 &\text{ otherwise},
 \end{cases}
 \end{equation}
@@ -1972,8 +1972,8 @@ where $p$ and $\rho$ are the pressure and density of the fluid, $\textbf{v}$ is 
 The discretized form of the equations \equref{eq:dam_break_pde} can be constructed similarly to the former SPH test cases:
 \begin{flalign} \label{eq:dambreak_sph_discretized}
 \begin{split}
-&\frac{d\rho_i}{dt}=-\rho_i\sum{(\textbf{v}_j-\textbf{v}_i)\frac{m_j}{\rho_j}\nabla W_{ij}}+0.1\sigma c\sum_j{2(\rho_j-\rho_i)\frac{\textbf{r}_{ij}}{|\textbf{r}_{ij}|^2}\frac{m_j}{\rho_j}\nabla W_{ij}}, \\
-&\frac{d\textbf{v}_i}{dt}=-\sum_j{\bigg(\frac{p_i}{\rho_i^2}+\frac{p_j}{\rho_j^2}\bigg)m_j\nabla W_{ij}}+\nu\sum_j{2(\textbf{v}_j-\textbf{v}_i)\frac{\textbf{r}_{ij}}{|\textbf{r}_{ij}|^2}\frac{m_j}{\rho_j}\nabla W_{ij}}, \\
+&\frac{d\rho_i}{dt}=-\rho_i\sum{(\textbf{v}_j-\textbf{v}_i)\frac{m_j}{\rho_j}\nabla W_{ij}}+0.1ch\sum_j{2(\rho_j-\rho_i)\frac{\textbf{r}_{ij}}{|\textbf{r}_{ij}|^2}\frac{m_j}{\rho_j}\nabla W_{ij}}, \\
+&\frac{d\textbf{v}_i}{dt}=-\sum_j{\bigg(\frac{p_i}{\rho_i^2}+\frac{p_j}{\rho_j^2}+Rf^n\bigg)m_j\nabla W_{ij}}+0.1ch\sum_j{\Pi_{ij}\frac{m_j}{\rho_j}\nabla W_{ij}}, \\
 \end{split}
 \end{flalign}
 where $\sigma$ is the smoothing distance of the kernel function $W_{ij}$ and $\textbf{r}_{ij}=\textbf{r}_{i}-\textbf{r}_{j}$. The second term on the RHS of the equations \equref{eq:dambreak_sph_discretized} is the artificial density and velocity diffusion term respectively \cite{Antuono2012}. The application of the density diffusion term is often referred as the $\delta$-SPH formulation \cite{Molteni2009} and \cite{Antuono2010}. Since the equations \equref{eq:dambreak_sph_discretized} do not imply any constraint between the velocity and pressure fields, an additional state equation
@@ -2049,7 +2049,10 @@ simulation:
       - delta_sph: rho_dot=rho_dot+0.1*c*h*sph_L0(rho,mass,rho,Wp52220,csize)
       - irho0: rho=euler(rho,rho_dot,dt)
       - EOS0: p=c^2*(rho-rho0)
-      - acc0: a=-1/rho*(sph_G11(p,mass,rho,Wp32220,csize)+sph_T(dx,p,mass,rho,Wp32220,csize))+0.1*c*h*sph_A(v,mass,rho,Wp32220,csize)+g
+      - acc0: a=-1/rho*(sph_G11(p,mass,rho,Wp32220,csize)+sph_T(dx,p,mass,rho,Wp32220,csize))+g
+        condition: eq(gid,fluid)
+      - acc1: a=a+0.1*c*h*sph_A(v,mass,rho,Wp32220,csize)
+        condition: eq(gid,fluid)
       - vel0: v=euler(v,a,dt)
         condition: eq(gid,fluid)
       - pos0: r=euler(r,v,dt)
@@ -2072,9 +2075,8 @@ simulation:
 \midrule
 Tank width & $L_x$ & $2$ m \\
 Tank height & $L_y$ & $1$ m \\
-Fluid initial height & $H$ & $1$ m \\
-Fluid initial width & $W$ & $0.5$ m \\
-Kinematic viscosity & $\nu$ & $0.005$ m \\
+Fluid initial height & $H$ & $0.4$ m \\
+Fluid initial width & $W$ & $0.8$ m \\
 \bottomrule[1.25pt]
 \end{tabular}
 \end{center}
