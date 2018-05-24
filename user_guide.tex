@@ -1,4 +1,4 @@
-\newcommand{\nauticleversion}{1.0.180207}
+\newcommand{\nauticleversion}{1.0.180524}
 \newcommand{\installer}{install\_\nauticleversion{}.sh}
 \newcommand{\execname}{\textbf{nauticle}}
 
@@ -265,14 +265,13 @@ Highlighted features:
 
 \section{Features and bugfixes in version \nauticleversion}
 \begin{itemize}
-  \item Bugfix for particle interaction switch for SPH with variable smoothing length.
-  \item Domains now support different cell sizes in different directions.
-  \item Matrix-logarithm function ("logm") has been implemented.
-  \item Eigen-system calculation (eigenvectors "eigsys" and eigenvalues "eigval") is implemented.
-  \item Extension of position field for symmetric and periodic boundary conditions in SPH operators.
-  \item Change configuration file type from XML to YAML for better readability.
-  \item New SPH operators for tensile instability correction and artificial viscosity are implemented.
-  \item SPH operator is implemented for the calculation of particle-inertia tensor.
+  \item Implementation of the Lennard-Jones interaction.
+  \item Fix kernel bug in SPH inertia tensor.
+  \item domain.vtk file output for all simulations.
+  \item Redesigned kernel function class.
+  \item Renamed class pmCase\_manager to class pmSimulation.
+  \item Implement arithmetic function "limit" in the SFL-tree.
+  \item Zeroth and first order kernel implementations.
 \end{itemize}
 
 \section{Methodology}
@@ -592,6 +591,21 @@ One of the simplest driving force is included in the equation
 \end{flalign}
 where $v_i$ is the velocity of the $i^{th}$ person, $v_0$ is the desired velocity magnitude in the direction $e_0$ and $\tau$ is the time scale. Furthermore, $A_i$, $B_i$, $k$ are constants of repulsive, $c_{ij}$ is of attractive forces, $R_{ij}=R_i+R_j$ is the sum of the radii of the two individuals in collision. $\textbf{n}_{ji}$, as formerly, is the normalized direction vector pointing from person $i$ to $j$, and finally, $d_{ij}$ is the distance between them. The desired velocity vector $v_0e_0$ is continually changing as the person moves towards the desired position. The equation \equref{SFM_ode} forms the basic social force interactions implemented in Nauticle.
 
+\subsubsection{Molecular dynamics (MD)} \label{sec:MD}
+The current Nauticle release implements a minimal molecular dynamics model governed by the Lennard-Jones potential:
+\begin{flalign} \label{LJ_potential}
+V(r)=4\epsilon\bigg(\bigg(\frac{\sigma}{r}\bigg)^{12}-\frac{1}{2}\bigg(\frac{\sigma}{r}\bigg)^6\bigg),
+\end{flalign}
+which can be used to calculate the interaction forces between particles $i$ and $j$:
+\begin{flalign} \label{LJ_interaction}
+\textbf{f}_{ji}=\frac{dV}{dr}\bigg|_{\vert\textbf{r}_{ji}\vert}=\frac{48\epsilon}{\vert\textbf{r}_{ji}\vert^2}\bigg(\bigg(\frac{\sigma}{\vert\textbf{r}_{ji}\vert}\bigg)^{12}-\frac{1}{2}\bigg(\frac{\sigma}{\vert\textbf{r}_{ji}\vert}\bigg)^6\bigg)\textbf{r}_{ji},
+\end{flalign}
+where $\textbf{r}_{ji}=\textbf{r}_{j}-\textbf{r}_{i}$. The constant parameters $\epsilon$ and $\sigma$ define the interaction magnitude and particle radii respectively. Although the potential function is unbounded, it is beneficial to apply an $r_{cut}=3\sigma$ to avoid $\O(N^2)$ complexity without significant loss of accuracy. The potential \equref{LJ_potential} implies two interparticle effects, namely the long range attraction, and a short range and strong repulsion forces. These are represented by the $(\sigma/r)^6$ and $(\sigma/r)^{12}$ terms respectively.
+
+The equation of motion of the molecular system according to \equref{LJ_interaction} reads as:
+\begin{flalign} \label{LJ_ode}
+\ddot{\textbf{r}}_{i}=-\sum_{j\neq i}{\textbf{f}_{ji}}.
+\end{flalign}
 
 \subsection{Temporal integration}
 Numerical schemes for integration are required to solve time-dependent differential equations. Two numerical schemes are implemented in Nauticle.
@@ -702,8 +716,8 @@ where $I^d$ is a $d$ dimensional identity tensor.
 Note that in case of certain quantities like angular velocity, or vorticity the reflection \equref{eq:reflection_periodic_symmetric} could be physically incorrect. Such cases are required to be treated with attention at symmetric boundaries by marking a field as non-symmetric (see the details in Section \ref{sec:DVM_example}).
 
 
-\subsection{Expression tree}
-The generality of the numerical solver requires the analysis of user-defined expressions and equations. In Nauticle the expression parsing is based on the expression tree shown in Figure \ref{fig:expression_tree}.
+\subsection{Symbolic form language (SFL) - Class hierarchy of expressions}
+The generality of the numerical solver requires the analysis of user-defined expressions and equations. In Nauticle the expression parsing is based on the class hierarchy of expressions shown in Figure \ref{fig:expression_tree}.
 \begin{figure}[H]
   \includegraphics[scale=0.5]{expression_tree.pdf}
   \centering
@@ -719,13 +733,13 @@ After the transformation of a user-defined expression to Reverse Polish Notation
   \label{fig:expression_example}
 \end{figure}\vspace*{3pt}
 
-Although the nodes of the expression tree specify different quantities and operators of Nauticle, all nodes are considered to operate on tensors. In the following, the branches and nodes of the expression tree are discussed.
+Although the nodes of the hierarchy specify different quantities and operators of Nauticle, all nodes are considered to operate on tensors. In the following, the branches and nodes of the expression tree are discussed.
 
 \subsubsection{The symbol branch}
 On the one hand, the single symbols like constants and variables represent global values for the simulation (such as the time step size or gravitational acceleration), which usually have the same value for each particle, consequently, one (single) instance is sufficient to be stored. Therefore the single quantities have very small memory requirements. However, in case of multistep integrators, the desired number of previous values of variables are automatically stored. Obviously it is unnecessary for constant values since they cannot be changed during their lifetime. On the other hand, the fields are interpreted over a set of spatial nodes (particles) storing tensor values assigned to each of the particles. Former values for multistep integrators are automatically stored as well, as in case of the variables. A special implementation of a field is the particle system itself, storing the particle positions as field variables. The particle system is special not only because it stores particle positions but it performs n-nearest neighbor search and stores the computational domain too. The restriction \equref{eq:restriction} of particles to the domain is also performed by the particle system.
 
 \subsubsection{The operator branch}
-The other main branch of the expression tree is the branch of operators acting on symbols. Operators are classified into three groups:
+The other main branch of the hierarchy is the branch of operators acting on symbols. Operators are classified into three groups:
 \begin{itemize}
   \item Arithmetic operators,
   \item Arithmetic functions,
@@ -780,13 +794,14 @@ Greater than & $gt$ & 2 & Matrix inverse & $inverse$ & 1 \\
 Greater than or equal & $gte$ & 2 & Logical condition & $if$ & 3 \\
 Less than & $lt$ & 2 & Equal & $eq$ & 2 \\
 Less than or equal & $lte$ & 2 & Not equal & $neq$ & 2 \\
-Natural logarithm & $log$ and $logm$ & 1 & Logical and & $and$ & 2 \\
+Natural logarithm & $log$ & 1 & Logical and & $and$ & 2 \\
 Vector length & $magnitude$ & 1 & Logical or & $or$ & 2 \\
 Maximum & $max$ & 2 & Logical negation & $not$ & 1 \\
 Minimum & $min$ & 2 & Logical exclusive or & $xor$ & 2 \\
 Tensor element & $elem$ & 3 & Identity tensor & $identity$ & 1 \\
 Q tensor of QR dec. & $deQ$ & 1 & R tensor of QR dec. & $deR$ & 1 \\ 
 Matrix eigenvectors & $eigsys$ & 1 & Matrix eigenvalues & $eigval$ & 1 \\
+Matrix logarithm & $logm$ & 1 & Limit & $limit$ & 3 \\
 \bottomrule[1.25pt]
 \end{tabular}
 \end{center}
@@ -833,11 +848,23 @@ Further interaction operators in Nauticle summarized below are related to the op
 
 First of all, it is beneficial to understand the built-in filter functions, which form the basis of some of the particle methods. The implemented filter functions (kernels) in Nauticle are enumerated below.
 
+\textbf{Zeroth order}:
+\begin{flalign} \label{eq:kernel_zeroth_order}
+W^{zeroth}(q)=\alpha_D,
+\end{flalign}
+where $D$ is the number of the dimensions, $\alpha_1=0.5/\sigma$, $\alpha_2=2/(\pi \sigma^2)$ and $\alpha_3=3/(4\pi \sigma^3)$ are the normalization coefficients, and $q=|r|/\sigma$ with the smoothing distance $\sigma$. The influence radius of the zeroth order kernel equals $q$.
+
+\textbf{First order}:
+\begin{flalign} \label{eq:kernel_first_order}
+W^{first}(q)=\alpha_D(1-q),
+\end{flalign}
+where, $\alpha_1=1/\sigma$, $\alpha_2=3/(\pi \sigma^2)$ and $\alpha_3=3/(\pi \sigma^3)$. The influence radius of the first order kernel equals $q$.
+
 \textbf{Second order polynomial (quadratic)}:
 \begin{flalign} \label{eq:kernel_quadratic}
-W^{quadratic}(q)=\alpha_D\bigg(\frac{3}{16}q^2-\frac{3}{4}q+\frac{3}{4}\bigg),
+W^{quadratic}(q)=\alpha_D\bigg(\frac{3}{16}q^2-\frac{3}{4}q+\frac{3}{4}\bigg)
 \end{flalign}
-where $D$ is the number of the dimensions, $\alpha_1=1/\sigma$, $\alpha_2=2/(\pi \sigma^2)$ and $\alpha_3=5/(4\pi \sigma^3)$ are the normalisation coefficients, and $q=|r|/\sigma$ with the smoothing distance $\sigma$. The influence radius of the quadratic kernel equals $2q$. 
+Here $\alpha_1=1/\sigma$, $\alpha_2=2/(\pi \sigma^2)$ and $\alpha_3=5/(4\pi \sigma^3)$ and $q=|r|/\sigma$ with the smoothing distance $\sigma$. The influence radius of the quadratic kernel equals $2q$. 
 
 \textbf{Third order polynomial (cubic)}:
 % \[
@@ -964,13 +991,28 @@ Similarly to the N-body and DVM operators, the SFM implementation is also covere
 \toprule[1.5pt]
 \bf Name & \bf Operands & \bf Description \\ 
 \midrule
-$sfm$ & $v,p_0,v_0,m,R,A,B,k,c,\tau$ & $\frac{d\textbf{v}_i}{dt}=\frac{v_0\textbf{e}_0-\textbf{v}_i}{\tau}-\frac{1}{m_i}\sum_{j\neq i}{\textbf{f}_{ij}}$ \\
+$sfm$ & $v,p_0,v_0,m,R,A,B,k,c,\tau$ & $\frac{d\textbf{v}_i}{dt}=$ \\
 \bottomrule[1.25pt]
 \end{tabular}
 \end{center}
 \end{table}
 The term $f_{ij}$ in the description represents the interaction forces between persons $i$ and $j$ as it was discussed in Section \ref{sec:SFM}. All operands are considered to be fields except for the body-force coefficient $k$ and time-scale $\tau$.
 
+\mysubparagraph{MD operator}
+The Lennard-Jones interaction operator is presented in Table \ref{tbl:MD_op}.
+\begin{table} [h!]
+\begin{center}
+\caption{Operator of the Lennard-Jones interaction.} \label{tbl:MD_op}
+\begin{tabular}{ l c l }
+\toprule[1.5pt]
+\bf Name & \bf Operands & \bf Description \\ 
+\midrule
+$md$ & $\epsilon, \sigma, r_{cut}$ & $\frac{d\textbf{v}_i}{dt}=\sum_{i\neq j}{\textbf{f}_{ji}}$ \\
+\bottomrule[1.25pt]
+\end{tabular}
+\end{center}
+\end{table}
+The term $f_{ji}$ in the description represents the interaction forces between particles $i$ and $j$ as it was discussed in Section \ref{sec:MD}. All operands are considered to be single and scalar values.
 
 \section{Using Nauticle} \label{sec:usage_of_nauticle}
 Nauticle is designed not only to simulate a wide range of physical models through user-defined equations but also to form a user- and developer-friendly interface for implementation of arbitrary meshless numerical schemes. As a result, a flexible simulation tool is emerged to facilitate the application of particle-based methods. In Figure \ref{fig:three_levels} the three separated levels of the Nauticle solver is presented and described shortly by pointing out the main aspects of each.
@@ -988,7 +1030,7 @@ To define and simulate a problem, a \textit{form} (YAML-document) is needed to b
 
 \textbf{Workspace}: A collection of user-defined symbols representing the quantities of the physical model.
 
-\textbf{User-defined equation (UDE)}: Equation, built up using the nodes of the expression tree and the objects stored in the workspace. The evaluation of an equation means the assignment of the RHS solution to the LHS. Consequently the LHS should be a variable, field or particle system. Each UDE has a condition with a default value "true" that determines if the equation has to be solved or not. The condition may have particle-dependent value.
+\textbf{User-defined equation}: Equation, built up using the nodes of the expression tree and the objects stored in the workspace. The evaluation of an equation means the assignment of the RHS solution to the LHS. Consequently the LHS should be a variable, field or particle system. Each user defined equation has a condition with a default value "true" that determines if the equation has to be solved or not. The condition may have particle-dependent value.
 
 \textbf{Parameter space}: An object to hold information about the simulation and solution data export.
 
@@ -1000,7 +1042,7 @@ To define and simulate a problem, a \textit{form} (YAML-document) is needed to b
 \end{figure}
 
 The schematic diagram of a simulation is presented in Figure \ref{fig:workflow}. After the parsing of the input files on the left, the case assembler builds the case, which is handled by the simulation scheduler. The latter is responsible for the calculation flow and parallelization. The result files are saved by the VTK-writer governed by the case manager. 
-As soon as the simulation scheduler sends a step request, the solution of the UDE's is carried out by the case itself. The change of the value of any symbol contained by the workspace during the solution is automatically updated. Optionally, any of the result files can be applied as initial conditions for a further simulation (see Section \ref{sec:YAML}).
+As soon as the simulation scheduler sends a step request, the solution of the user defined equations is carried out by the case itself. The change of the value of any symbol contained by the workspace during the solution is automatically updated. Optionally, any of the result files can be applied as initial conditions for a further simulation (see Section \ref{sec:YAML}).
 
 \subsection{Input/Output file formats}
 During the execution of a simulation, Nauticle works with four types of input and output files. Some of these files are fundamental, the others are optional. The subsequent sections introduce these file types more or less in the order of importance.
@@ -1045,7 +1087,7 @@ eq2:F1=(C1+F2)#eq(gid,0)
 eq3:dt=(C3-C2)#gt(F1,C3)
 ...
 \end{lstlisting}
-The character "\#" marks the solution condition for each UDE.
+The character "\#" marks the solution condition for each equation.
 \subsubsection{VTK-document}
 VTK is a general purpose library for visualization and storage of arbitrary geometry. To store simulation results, VTK formatted ASCII or binary files are used.
 \myparagraph{Simple Legacy Formats}
@@ -1057,7 +1099,7 @@ The legacy VTK file formats consist of five basic parts \cite{VTK_format}.
 \item 4. The fourth part is the dataset structure. The geometry part describes the geometry and topology of the dataset. This part begins with a line containing the keyword DATASET followed by a keyword describing the type of dataset. Then, depending upon the type of dataset, other keyword/ data combinations define the actual data.
 \item 5. The final part describes the dataset attributes. This part begins with the keywords POINT\_DATA or CELL\_DATA, followed by an integer number specifying the number of points or cells, respectively. (It doesn't matter whether POINT\_DATA or CELL\_DATA comes first.) Other keyword/ data combinations then define the actual dataset attribute values (i.e. scalars, vectors, tensors, normals, texture coordinates, or field data). 
 \end{itemize}
-In Nauticle the result files contain the whole case including the workspace and UDE's. The DATASET type is POLYDATA, while the symbols and UDE's are stored as string formatted data.
+In Nauticle the result files contain the whole case including the workspace and equations. The DATASET type is POLYDATA, while the symbols and equations are stored as string formatted data.
 \subsubsection{Text document}
 The particle cloud can be optionally defined through text files containing the set of nodal positions instead of the uniform grid generation based on the YAML data. Note that the text file should always contain three-dimensional coordinates separated by spaces or tabs. The dimensions of the problem are then defined by the domain and only the relevant coordinates of the nodal positions are considered, other coordinates are dropped.
 \subsubsection{Log files}
@@ -1282,7 +1324,7 @@ in terminal after changing directory to the desired folder. The content of the s
 #!/bin/sh
 
 # Versions of nauticle and its dependencies
-NAUTICLE_version="1.0.180207"
+NAUTICLE_version="1.0.180524"
 VTK_version="7.0.0"
 CU_VERSION="1.0.170815"
 PL_version="1.0.170815"
@@ -2352,6 +2394,66 @@ in Nauticle performs the simulation of the evacuation of the building for one mi
 \end{figure}\vspace*{3pt}
 The complete evacuation occured in slightly more than $40$ seconds.
 
+\subsection{Molecular dynamics simulation} \label{sec:MD_example}
+\subsubsection{Problem definition}
+Consider a two-dimensional square-shaped domain with edge size $L=20$ m, in which a set of particles aligned initially over a uniform lattice shown in Figure \ref{fig:MD_ic}.
+\begin{figure}[H]
+  \includegraphics[scale=0.3]{md_ic.pdf}
+  \centering
+  \caption{Initial condition of the particle layout in the square domain.}
+  \label{fig:MD_ic}
+\end{figure}\vspace*{3pt}
+The particle mass, the radii $\sigma$ and the interaction magnitudes $\epsilon$ are considered to be one, and $r_{cut}=3$ m. According to the Lennard-Jones potential, the system of particles can be written as:
+\begin{flalign}
+\frac{dv_i}{dt}=-\sum_{j\neq i}{\frac{48\epsilon}{\vert\textbf{r}_{ji}\vert^2}\bigg(\bigg(\frac{\sigma}{\vert\textbf{r}_{ji}\vert}\bigg)^{12}-\frac{1}{2}\bigg(\frac{\sigma}{\vert\textbf{r}_{ji}\vert}\bigg)^6\bigg)\textbf{r}_{ji}},
+\end{flalign}
+which is in this case intergrated numerically using the velocity-Verlet scheme. The simple mathematical model can be built using the $md(\epsilon,\sigma,r_{cut})$ operator, hence the configuration file obtians the following form:
+\begin{samepage}
+\begin{example}{Lennard-Jones configuration file}{}
+\lstset{basicstyle=\tiny}
+\begin{lstlisting}[language=YAML]
+simulation:
+  case:
+    workspace:
+      constants:
+        - Lx: 20
+        - cell_size: 4
+      variables:
+        - dt: 0.01
+      particle_system:
+        domain:
+          cell_size: cell_size|cell_size
+          minimum: 0|0
+          maximum: Lx/cell_size|Lx/cell_size
+          boundary: symmetric|symmetric
+        grid:
+          gid: 0
+          gpos: 5|5
+          gsize: 10|10
+          goffset: 0|0
+          gip_dist: 1.1|1.1
+      fields:
+        - v: rand(-0.1,0.1)|rand(-0.1,0.1)
+        - a: 0|0
+    equations:
+      - pos: r=verlet_r(r,v,a,dt)
+      - acceleration: a=md(1,1,3)
+      - vel: v=verlet_v(v,a,dt)
+  parameter_space:
+    simulated_time: 10
+    print_interval: 0.1
+\end{lstlisting}
+\end{example}
+\end{samepage}
+As it can be seen, the initial velocity of the particles were chosen randomly in both $x$ and $y$ directions within the range $[-0.1,0.1]$. Finally, the particle positions after $10$ s is presented in Figure \ref{fig:MD_results}.
+\begin{figure}[H]
+  \includegraphics[scale=0.3]{md_results.pdf}
+  \centering
+  \caption{Particle positions (left) and velocities (right) at the time instant $t=10$ s.}
+  \label{fig:MD_results}
+\end{figure}\vspace*{3pt}
+Since there is no dissipation in the simulation, the particles do not occupy stationary equilibrium states.
+
 \section{The Nauticle open-source code}
 This section comments the role of each source and header file of Nauticle. For better clarity, the explanation is divided into different groups marked by the subsequent sections.
 \subsection{Nodes of the expression tree}
@@ -2413,6 +2515,9 @@ Declares / defines the Smoothed Particle Hydrodynamics interaction in the expres
 \textbf{pmSfm\_operator.h / pmSfm\_operator.cpp} \\
 Declares / defines the Social Force Model interaction in the expression tree.
 
+\textbf{pmMd\_operator.h / pmMd\_operator.cpp} \\
+Declares / defines the Molecular dynamics interaction in the expression tree.
+
 \textbf{pmFmax.h / pmFmax.cpp} \\
 Declares / defines the class that calculates the maximum of the given field.
 
@@ -2452,7 +2557,7 @@ Declares / defines the class for writing functions.
 \textbf{pmCase.h / pmCase.cpp} \\
 Declares / defines the case class representing  simulation case.
 
-\textbf{pmCase\_manager.h / pmCase\_manager.cpp} \\
+\textbf{pmSimulation.h / pmSimulation.cpp} \\
 Declares / defines the class for simulation management like solution of equations and writing results.
 
 \textbf{pmCommand\_parser.h / pmCommand\_parser.cpp} \\
@@ -2476,8 +2581,32 @@ Declares / defines the class that generates one-, two- or three-dimensional grid
 \textbf{pmGrid\_space.h / pmGrid\_space.cpp} \\
 Declares / defines the class that stores the grids specified during the simulation.
 
+\textbf{pmKernel\_includes.h / pmKernel\_includes.cpp} \\
+Collects the implemented kernel functions for inclusion.
+
+\textbf{pmKernel\_function.h / pmKernel\_function.cpp} \\
+Declares / defines the base class of kernel functions.
+
 \textbf{pmKernel.h / pmKernel.cpp} \\
-Declares / defines the class of kernel functions.
+Declares / defines the class for wrapping kernel functions.
+
+\textbf{pmZeroth\_order\_kernel.h} \\
+Declares / defines the class that implements the zeroth order kernel function.
+
+\textbf{pmFirst\_order\_kernel.h} \\
+Declares / defines the class that implements the first order kernel function.
+
+\textbf{pmSecond\_order\_kernel.h} \\
+Declares / defines the class that implements the second order kernel function.
+
+\textbf{pmThird\_order\_kernel.h} \\
+Declares / defines the class that implements the third order kernel function.
+
+\textbf{pmFifth\_order\_kernel.h} \\
+Declares / defines the class that implements the fifth order kernel function.
+
+\textbf{pmGaussian\_order\_kernel.h} \\
+Declares / defines the class that implements the gaussian kernel function.
 
 \textbf{pmMath\_parser.h / pmMath\_parser.cpp} \\
 Declares / defines the class with math parsing methods (abstract class).
