@@ -1,4 +1,4 @@
-\newcommand{\nauticleversion}{1.0.180524}
+\newcommand{\nauticleversion}{1.1.190131}
 \newcommand{\installer}{install\_\nauticleversion{}.sh}
 \newcommand{\execname}{\textbf{nauticle}}
 
@@ -265,13 +265,13 @@ Highlighted features:
 
 \section{Features and bugfixes in version \nauticleversion}
 \begin{itemize}
-  \item Implementation of the Lennard-Jones interaction.
-  \item Fix kernel bug in SPH inertia tensor.
-  \item domain.vtk file output for all simulations.
-  \item Redesigned kernel function class.
-  \item Renamed class pmCase\_manager to class pmSimulation.
-  \item Implement arithmetic function "limit" in the SFL-tree.
-  \item Zeroth and first order kernel implementations.
+  \item Implementation of particle splitting and merging algorithms.
+  \item Angular momentum conservation on particle merging.
+  \item Implementation of background functions and interpolations from vtk data.
+  \item Parameter space items support periodically evaluated expressions.
+  \item New parameters of the simulation are accessible from the Symbolic Form Language (SFL).
+  \item Implementation of spatially coupled Kuramoto model as a new interaction.
+  \item Optional automated precompilation of SFL configuration.
 \end{itemize}
 
 \section{Methodology}
@@ -371,7 +371,7 @@ The discretization of \equref{convolution_kernel} to a cloud of particles is wri
 \begin{flalign} \label{eq:discrete_convolution}
   \langle A(\textbf{r}_i)\rangle=\sum_{j}{A(\textbf{r}_j)W(\textbf{r}_i-\textbf{r}_j,\sigma)\frac{m_j}{\rho_j}},
 \end{flalign}
-where $m_j$ and $\rho_j$ are the particle mass and density values of particle $j$ respectively. \\
+where $m_j$ and $\rho_j$ are the particle mass density values of particle $j$ respectively. \\
 The construction of first order SPH-differential operators can be introduced by applying \equref{convolution_kernel} to the derivative of $A(\textbf{r})$. Using the divergence theorem of Gauss-Ostrogradsky, the second condition in \equref{kernel_properties} and assuming that the sampling of the spherical domain $\Omega$ is sufficiently uniform, the differential operator can be replaced by the smoothing kernel function:
 \begin{flalign} \label{continuum_diffop}
 \begin{split}
@@ -469,8 +469,35 @@ Finally, a special averaging method, the XSPH interpolant
 \end{flalign}
 is often applied to the velocity field in fluid simulations to improve spatial distribution of particles \cite{Monaghan1989}.
 
+\myparagraph{Adpative spatial resolution}
+The current version of Nauticle supports the adaptive choice of particle resolution in space and time. The particle splitting and merging techniques are fundamentally based on the recent developments of SPH \cite{Vacondio2013a, Feldman2007, Lopez2011, Liu2017, Toth2018}.
+Without the complete and detailed presentation of the splitting and coalescing techniques introduced in the abovementioned papers, only a brief summary is given here.
 
+\textbf{Particle splitting}\\
+In Nauticle, the particle splitting technique is based on the model presented in \cite{Vacondio2013a}. When a particle is required to be refined for higher resolution sampling, it is removed from the simulation and replaced by a set of smaller but completely identical daughter particles using the pattern shown in Figure \ref{fig:splitting}.
+\begin{figure}[H]
+  \includegraphics[scale=0.6]{particle_splitting_draw.pdf}
+  \centering
+  \caption{Particle splitting pattern with the notation of the separation parameter $\epsilon$ and smoothing ratio $\alpha$. Empty circle shows the original particle and the filled ones are the generated daughter particles.}
+  \label{fig:splitting}
+\end{figure}\vspace*{3pt}
+To preserve the linear and angular momenta of the mother particle during the splitting and ensure the exact conservation of mass, the
+\begin{equation}
+\begin{split}
+m_m=n_pm_d, \\
+v_m=v_d
+\end{split}
+\end{equation}
+expressions must hold, where $m_m$ and $m_d$ are the mass of the mother and daughter particles, $v$ is the velocity and $n_p$ is the number of the daughter particles. Beside the change of the mass per particle, one also need to change the particle smoothing radius using the $\alpha$ smoothing ratio. Without shifting its center off mass, the daughter particles are placed around the mother particle using the separation parameter $\epsilon$.
 
+\textbf{Particle coalescing}\\
+Opposite to the particle splitting, coalescing facilitates the particle number reduction when less detailed solution is required in a specific region. The particle merging procedure implemented in Nauticle ensured the exact conservation of not only the mass and linear momentum, but the angular momentum as well. In contrast with former coalescing procedures, this can be done by merging a particle triplet to a pair of particles having sufficient degrees of freedom to preserve a rotational motion \cite{Toth2018}. The particle merging procedure is shown in Figure \ref{fig:merging}.
+\begin{figure}[H]
+  \includegraphics[scale=0.4]{particle_coalescing_draw.pdf}
+  \centering
+  \caption{Particle coalescing technique with angular momentum conservation. Empty circles show the original particle and the filled ones show the layout after merge.}
+  \label{fig:merging}
+\end{figure}\vspace*{3pt}
 
 
 \subsubsection{Discrete Element Method (DEM)} \label{sec:DEM_intro}
@@ -606,6 +633,27 @@ The equation of motion of the molecular system according to \equref{LJ_interacti
 \begin{flalign} \label{LJ_ode}
 \ddot{\textbf{r}}_{i}=-\sum_{j\neq i}{\textbf{f}_{ji}}.
 \end{flalign}
+
+
+
+\subsubsection{Kuramoto model} \label{sec:kuramoto}
+The model implemented in Nauticle can be considered as a generalization of the conventional Kuramoto model \cite{Kuramoto1975}. Conventionally, the synchronization of phase oscillators can be expressed as the solution of the equation
+\begin{equation} \label{eq:kuramoto}
+\dot\theta_i=\Omega_i+\frac{K}{N}\sum_{j=1}^N{\sin(\theta_j-\theta_i)} \quad\quad\quad i=1,..,N,
+\end{equation}
+where $\theta_i$ is the phase of the $i$th oscillator, $\Omega$ is the natural frequency, $K$ is the coupling strength, $N$ is thw number of coupled oscillators in the system. Although the equation \equref{eq:kuramoto} has several different form, even with higher order temporal derivatives \cite{Tanaka1997}, in the present discussion we focus on the second term on the right hand side. Implying spatial connectivity, several works investigate diluted systems with a binary connectivity matrix $A_{ij}$ such that $A_{ij}=1$ if the oscillators $i$ and $j$ are connected and $A_{ij}=0$ if not \cite{Olmi2014}. The synchronization term then reads as
+\begin{equation}
+\frac{K}{N}\sum_{j=1}^N{A_{ij}\sin(\theta_j-\theta_i)}.
+\end{equation}
+As another approach implemented in Nuticle, the oscillator connectivity can be considered using the spatial configuration:
+\begin{equation}
+\begin{split}
+&K\sum_{j=1}^N{\sin(\theta_j-\theta_i)\hat W_{ij}}, \\
+&\hat W_{ij}=\frac{W_{ij}}{\sum_j{W_{ij}}}
+\end{split}
+\end{equation}
+where $W_{ij}$ is a smoothing kernel function.
+
 
 \subsection{Temporal integration}
 Numerical schemes for integration are required to solve time-dependent differential equations. Two numerical schemes are implemented in Nauticle.
@@ -1014,6 +1062,23 @@ $md$ & $\epsilon, \sigma, r_{cut}$ & $\frac{d\textbf{v}_i}{dt}=\sum_{i\neq j}{\t
 \end{table}
 The term $f_{ji}$ in the description represents the interaction forces between particles $i$ and $j$ as it was discussed in Section \ref{sec:MD}. All operands are considered to be single and scalar values.
 
+\mysubparagraph{Kuramoto operator}
+The Kuramoto interaction operator is presented in Table \ref{tbl:kuramoto_op}.
+\begin{table} [h!]
+\begin{center}
+\caption{Operator of the spatially coupled Kuramoto interaction.} \label{tbl:kuramoto_op}
+\begin{tabular}{ l c l }
+\toprule[1.5pt]
+\bf Name & \bf Operands & \bf Description \\ 
+\midrule
+$kuramoto$ & $\theta, R, W$ & $\sum_{i\neq j}{\sin(\theta_j-\theta_i)}$ \\
+\bottomrule[1.25pt]
+\end{tabular}
+\end{center}
+\end{table}
+Here $\theta_i$ is the phase of the $i$th oscillator, R is the influence radius (identical in case of all oscillators) and $W$ is the smoothing kernel function.
+
+
 \section{Using Nauticle} \label{sec:usage_of_nauticle}
 Nauticle is designed not only to simulate a wide range of physical models through user-defined equations but also to form a user- and developer-friendly interface for implementation of arbitrary meshless numerical schemes. As a result, a flexible simulation tool is emerged to facilitate the application of particle-based methods. In Figure \ref{fig:three_levels} the three separated levels of the Nauticle solver is presented and described shortly by pointing out the main aspects of each.
 \begin{figure}[H]
@@ -1028,12 +1093,38 @@ To define and simulate a problem, a \textit{form} (YAML-document) is needed to b
 \subsubsection{Definitions}
 \textbf{Symbol}: User defined constant, variable or field that has a name and a tensor value. Particle system is considered to be a symbol as well.
 
-\textbf{Workspace}: A collection of user-defined symbols representing the quantities of the physical model.
+\textbf{Workspace}: A collection of user-defined symbols representing the quantities of the physical model. The workspace has to contain a particle system with a simulation domain. Field values are assigned to the particle, whereas constants and variables are single values.
 
 \textbf{User-defined equation}: Equation, built up using the nodes of the expression tree and the objects stored in the workspace. The evaluation of an equation means the assignment of the RHS solution to the LHS. Consequently the LHS should be a variable, field or particle system. Each user defined equation has a condition with a default value "true" that determines if the equation has to be solved or not. The condition may have particle-dependent value.
 
-\textbf{Parameter space}: An object to hold information about the simulation and solution data export.
+\textbf{Parameter space}: An object to hold information about the simulation and solution data export. The values of the parameters can be expressions that are evaluated in every simulation loop (cf. phase separation model in section \ref{sec:cahn_hilliard}).
 
+\textbf{Splitter / Merger}: Features that allow the user to run computations with spatially varying resolution through particle splitting and merging. Both splitting and merging are governed by different parameters that are evaluated periodically at runtime. Users need to provide fields to the particle modifiers such as mass, velocity and smoothing radius. The complete list and explanation of parameters for the splitter option:
+\begin{itemize}
+  \item condition: an expression that is evaluated for all particles. If the result is true for a specific particle, it will be splitted in the current simulation loop.
+  \item radius\_field: smoothing radius (has to be a field).
+  \item rotation: angle of the generated pattern in radians. It is also an expression allowing particle to have different angles, and even randomly distributed angles in space and time.
+  \item mass\_field: particle mass (has to be a field).
+  \item smoothing\_ratio: the ratio of the new radii and the original particle's radius (expression is allowed).
+  \item separation\_parameter: separation parameter of the generated pattern (expression is allowed).
+  \item daughters: number of generated particles (expression is allowed).
+  \item parent: splitter generates new particle in the place of the original if =1 and not if =0.
+  \item period: splitting evaluation frequency (expression is allowed).
+\end{itemize}
+and for the merger option:
+\begin{itemize}
+  \item condition: an expression that is evaluated for all particles. If the result is true for a specific particle, it will be merged with its two closest neighbors.
+  \item radius\_field: smoothing radius (has to be a field).
+  \item mass\_field: particle mass (has to be a field).
+  \item velocity\_field: particle velocity (has to be a field).
+  \item period: splitting evaluation frequency (expression is allowed).
+  \item neighbor\_condition: expression that is evaluated for the neighbors and includes them for merging only if =true.
+\end{itemize}
+Multiple instances of both splitter and merger options are allowed to be used in a single simulation. Please note, that the currently implemented particle splitting and merging algorithms are working in case of two-dimensional simulations only. A simulation with particle splitting and merging is presented in section \ref{sec:SPH_adaptive}.
+
+\textbf{Background}: external vtkUnstructuredGrid formatted data for particle value (field) interpolation. It requires the file name and the field name that is used to interpolate the grid data periodically in every simulation loop.
+
+\subsubsection{Simulation process}
 \begin{figure}[H]
   \includegraphics[scale=0.55]{workflow.pdf}
   \centering
@@ -1043,6 +1134,31 @@ To define and simulate a problem, a \textit{form} (YAML-document) is needed to b
 
 The schematic diagram of a simulation is presented in Figure \ref{fig:workflow}. After the parsing of the input files on the left, the case assembler builds the case, which is handled by the simulation scheduler. The latter is responsible for the calculation flow and parallelization. The result files are saved by the VTK-writer governed by the case manager. 
 As soon as the simulation scheduler sends a step request, the solution of the user defined equations is carried out by the case itself. The change of the value of any symbol contained by the workspace during the solution is automatically updated. Optionally, any of the result files can be applied as initial conditions for a further simulation (see Section \ref{sec:YAML}).
+
+\subsection{Runtime compilation of SFL}
+From version 1.1.190131 Nauticle supports the automated runtime compilation of user-defined equations constructed in the SFL configuration. To set the runtime compilation active, the \texttt{compile\_case} keyword has to be used in the parameter space:
+\begin{example}{Activation of runtime compilation os user-defined equations}{}
+\lstset{basicstyle=\tiny}
+\begin{lstlisting}[language=YAML]
+  parameter_space: 
+    simulated_time: 100
+    print_interval: 1
+    confirm_on_exit: false
+    output_format: BINARY
+    compile_case: true
+\end{lstlisting}
+\end{example}
+Using this option the runtime compilation is completely automatic without the requirement of any further user actions. With setting the \texttt{compile\_case: true} option, after reading the configuration file, Nauticle performs the following steps:
+\begin{itemize}
+  \item Makes new folder in the working directory with name \texttt{binary\_case},
+  \item Generates \texttt{pmBinary\_case.h} and \texttt{pmBinary\_case.cpp} C++ files in the folder \texttt{binary\_case}. These files hold the whole simulation case defined in the yaml configuration with the workspace and equations,
+  \item Generates \texttt{CMakeLists.txt} file with the required header and static library targets including the generated header and source files.
+  \item Runs \texttt{CMakeLists.txt} to generate \texttt{Makefile}.
+  \item Runs \texttt{Makefile}, to generate the final shared object file \texttt{pmBindary\_case.so},
+  \item Loads the shared object and links the binary content to the running application.
+  \item Runs the simulation as usual but this time using the compiled objects and functions.
+  \item After finishing the computation, Nauticle automatically removes the generated folder.
+\end{itemize}
 
 \subsection{Input/Output file formats}
 During the execution of a simulation, Nauticle works with four types of input and output files. Some of these files are fundamental, the others are optional. The subsequent sections introduce these file types more or less in the order of importance.
@@ -1140,6 +1256,9 @@ $true$ & Logical true\\
 $false$ & Logical false  \\
 $pi$ & 3.141592653589793238462\\
 $e\_i, e\_j, e\_k$ & Depends on the number of dimensions. \\
+$write\_step$ & $=1$ if the current step will be writen to vtk or $=0$ otherwise. \\
+$substeps$ & Number of substeps. \\
+$all\_steps$ & Number of all steps. \\
 \bottomrule[1.25pt]
 $domain\_min$ & \multirow{20}{*}{Keywords}\\
 $domain\_max$ & \\
@@ -1305,16 +1424,17 @@ Nauticle requires a few dependencies and requirements to be installed. These are
   \item Common utilities (\myhref{https://bitbucket.org/BalazsToth/commonutils}{https://bitbucket.org/BalazsToth/commonutils}),
   \item ProLog (\myhref{https://bitbucket.org/BalazsToth/prolog}{https://bitbucket.org/BalazsToth/prolog}),
   \item yaml-cpp (\myhref{https://github.com/jbeder/yaml-cpp}{https://github.com/jbeder/yaml-cpp}).
+  \item C2C (\myhref{https://bitbucket.org/nauticleproject/c2c}{https://bitbucket.org/nauticleproject/c2c}).
 \end{itemize}
 The details of the required dependencies are not discussed here, please follow the links to find more information about the listed packages. Further dependencies could be required by the Visualization Toolkit and yaml-cpp.
 
 During the installation process, it is assumed that the user has internet connection and root privileges (super user). Throughout the following subsection, the automatic installation procedure is discussed in detail.
 Note: to avoid any version conflicts it is preferred to install and build Nauticle with its dependencies using HashDist, which is an environment management system (\myhref{https://github.com/hashdist/hashdist}{https://github.com/hashdist/ hashdist}). However, it is not mandatory and the automated installation process does not apply any environment manager. \\
-Except for the VTK library, all header and binary files related to the dependencies are required to be copied into the /usr/local/include/<dependency> and /usr/local/lib/<dependency> directories in case of both Linux and Mac systems. VTK libary should be placed into the directory /usr/local/VTK.7.0.0 and built simply by following the instructions of the VTK Documentation. Obviously, to compile and build Nauticle, all its dependencies are required to be completely installed in the proper directories. 
+Except for the VTK library, all header and binary files related to the dependencies are required to be copied into the /usr/local/include/<dependency> and /usr/local/lib/<dependency> directories in case of both Linux and Mac systems. VTK libary should be placed into the directory /usr/local/VTK.7.0.0 and built simply by following the instructions of the VTK Documentation. Obviously, to compile and build Nauticle, all its dependencies are required to be completely installed in the proper directories.
 \subsection{Automated installation}
 Although it is possible to install and build the dependencies and Nauticle manually, it is recommended to use the installation shell script arriving with Nauticle. However, it is assumed that the proper version (v4.8) of \texttt{gcc} and \texttt{g++} are already installed. The script installs the whole package including the dependencies by typing the command
 \begin{lstlisting}[language=bash]
-  $ sudo sh (*@\installer{}@*)
+  $ sh (*@\installer{}@*)
 \end{lstlisting}
 in terminal after changing directory to the desired folder. The content of the script with explanations is as follows:
 
@@ -1322,26 +1442,32 @@ in terminal after changing directory to the desired folder. The content of the s
 \lstset{basicstyle=\tiny}
 \begin{lstlisting}[language=bash]
 #!/bin/sh
-
+if [ $(id -u) -eq 0 ]
+  then echo "Please do not run as root. I will ask for permissions when necessary."
+  exit
+fi
 # Versions of nauticle and its dependencies
-NAUTICLE_version="1.0.180524"
+NAUTICLE_version="1.1.190131"
 VTK_version="7.0.0"
-CU_VERSION="1.0.170815"
-PL_version="1.0.170815"
-YAMLCPP_version="0.5.3"
+CU_VERSION="1.0.190131"
+PL_version="1.0.190131"
+C2_version="1.0.190131"
+YAMLCPP_version="0.6.0"
 
 # Set current directory to install directory.
 INSTALL_DIR=$PWD
-sudo chmod -R 777 ${INSTALL_DIR}
+sudo chown ${USER} ${INSTALL_DIR}
 
 # Set OS variable (assume linux)
 OS="Linux"
+NUM_THREADS=4
 if [ "$(uname)" = "Darwin" ]; then
 # if mac, install wget, and cmake
     brew install wget
     brew install cmake
     brew install boost
     OS="Mac"
+    NUM_THREADS=$(sysctl -n hw.ncpu)
 elif [ $OS = "Linux" ]; then
   # if linux, install opengl and cmake
     sudo apt-get update
@@ -1349,14 +1475,17 @@ elif [ $OS = "Linux" ]; then
   sudo apt-get --yes --force-yes install freeglut3-dev
   sudo apt-get --yes --force-yes install cmake
   sudo apt-get --yes --force-yes install libboost-all-dev
+  NUM_THREADS=$(nproc)
 fi
+
+echo Setting number of threads for compilation to $NUM_THREADS
 
 # Install proper version of VTK library
 wget http://www.vtk.org/files/release/7.0/VTK-$VTK_version.zip
 sudo unzip VTK-$VTK_version.zip -d /usr/local/
 cd /usr/local/VTK-$VTK_version
 sudo cmake .
-sudo make
+sudo make -j${NUM_THREADS}
 
 # Go to install directory
 cd $INSTALL_DIR
@@ -1364,39 +1493,50 @@ cd $INSTALL_DIR
 # Download and unzip the required packages
 PCKG_CU=commonutils_$CU_VERSION.zip
 PCKG_PL=prolog_$PL_version.zip
+PCKG_C2=c2c_$C2_version.zip
 PCKG_NA=nauticle_$NAUTICLE_version.zip
-PCKG_YM=release-$YAMLCPP_version.zip
+PCKG_YM=yaml-cpp-$YAMLCPP_version.zip
 wget https://bitbucket.org/BalazsToth/commonutils/downloads/$PCKG_CU
 wget https://bitbucket.org/BalazsToth/prolog/downloads/$PCKG_PL
+wget https://bitbucket.org/nauticleproject/c2c/downloads/$PCKG_C2
 wget https://bitbucket.org/nauticleproject/nauticle/downloads/$PCKG_NA
 wget https://github.com/jbeder/yaml-cpp/archive/$PCKG_YM
-sudo unzip $PCKG_CU
-sudo unzip $PCKG_PL
-sudo unzip $PCKG_NA
-sudo unzip $PCKG_YM
-sudo chmod -R 777 commonutils prolog nauticle yaml-cpp-release-$YAMLCPP_version
+unzip $PCKG_CU
+unzip $PCKG_PL
+unzip $PCKG_NA
+unzip $PCKG_YM
+unzip $PCKG_C2
+# sudo chmod -R 777 commonutils prolog c2c nauticle yaml-cpp-release-$YAMLCPP_version
 
 # Install the dependencies and the nauticle executable (nauticle) itself
 cd $INSTALL_DIR/commonutils
-sudo cmake .
-sudo make install
+cmake .
+cmake .
+sudo make install -j${NUM_THREADS}
  
 cd $INSTALL_DIR/prolog
-sudo cmake .
+cmake .
+cmake .
+sudo make install -j${NUM_THREADS}
+
+cd $INSTALL_DIR/yaml-cpp-yaml-cpp-$YAMLCPP_version
+cmake .
+cmake .
+sudo make -j${NUM_THREADS}
 sudo make install
 
-cd $INSTALL_DIR/yaml-cpp-release-$YAMLCPP_version
-sudo cmake .
-sudo make
-sudo make install
+cd $INSTALL_DIR/c2c
+cmake .
+cmake .
+sudo make install -j${NUM_THREADS}
 
 # Set directory name for executable
 BIN_DIR="${INSTALL_DIR}/nauticle/bin/$OS"
 cd $INSTALL_DIR/nauticle
-sudo cmake .
-sudo cmake .
-sudo mkdir $BIN_DIR
-sudo make
+cmake .
+cmake .
+mkdir $BIN_DIR
+sudo make install -j${NUM_THREADS}
 cd ..
 
 # Add BIN_DIR to the environment PATH variable
@@ -1411,8 +1551,8 @@ fi
 # Generate script file to run nauticle
 # (this file is optional and probably useful only when using Nauticle through ssh)
 sudo rm -f start.sh
-sudo touch start.sh
-sudo chmod 777 start.sh
+touch start.sh
+
 printf "#!/bin/sh\nshift\nexecutable=$BIN_DIR/nauticle\n" >> start.sh
 printf "sudo \$executable \"\$@\"" >> start.sh
 
@@ -1421,10 +1561,10 @@ while true; do
   read -p "Do you wish to delete temporary files?" yn
     case $yn in
         [Yy]* ) cd $INSTALL_DIR
-          sudo rm -r commonutils prolog yaml-cpp-release-$YAMLCPP_version
-          sudo rm $PCKG_CU $PCKG_PL $PCKG_HX $PCKG_NA VTK-$VTK_version.zip
+          sudo rm -r commonutils prolog c2c yaml-cpp-yaml-cpp-$YAMLCPP_version
+          sudo rm $PCKG_CU $PCKG_PL $PCKG_YM $PCKG_NA $PCKG_C2 VTK-$VTK_version.zip
           mv $BIN_DIR/nauticle $INSTALL_DIR/tmp
-          rm -rf nauticle
+          sudo rm -rf nauticle
           mkdir -p "$BIN_DIR"
           mv $INSTALL_DIR/tmp $BIN_DIR/nauticle
           break;;
@@ -1446,8 +1586,10 @@ Note that the optional runtime commands are forwarded by \textbf{start.sh}, whic
 \end{lstlisting}
 where the arguments\_list consists of the options listed in Table \ref{tbl:runtime_commands}.
 
+To uninstall Nauticle, users only need to run the attached \texttt{uninstall.sh} script that wipes all the installed include and library files. However, since the dependencies (c2c, prolog, commonutils) may have other packages depending on them, they need to be removed separately but in the same way.
+
 \section{Examples} \label{sec:examples}
-This section describes a few examples of the application of the Nauticle solver to more or less simple physical models governed by partial or ordinary differential equations. The examples are selected to cover a wide range of applications from both physical and mathematical point of view.
+This section describes a few examples of the application of the Nauticle solver to more or less simple physical models governed by partial or ordinary differential equations. The examples are selected to cover a wide range of applications from both physical and mathematical point of view. For further simulation examples, the reader is encouraged to study the \textit{undocumented examples} attached to the Nauticle package.
 
 Note that the solutions presented in this section might have further different, but also correct realizations.
 \subsection{Couette-flow}
@@ -1572,6 +1714,7 @@ simulation:
     print_interval: 1
     confirm_on_exit: false
     output_format: BINARY
+    compile_case: true
 \end{lstlisting}
 \end{example}
 Since the initial conditions for both the temperature and velocity are uniform, the solution of the discretized equations needs to be repeated until the result is sufficiently formed. In this case the simulated time is $100$ s. The final result is compared with the analytical solution in Figure \ref{fig:couette_results}.
@@ -1583,7 +1726,7 @@ Since the initial conditions for both the temperature and velocity are uniform, 
 \end{figure}\vspace*{3pt}
 
 The results show very good agreement with the analytical solution in case of both the linear temperature and the exponential velocity distributions.
-\subsection{Phase separation on a sphere}
+\subsection{Phase separation on a sphere} \label{sec:cahn_hilliard}
 \subsubsection{Problem definition}
 The process of the separation of two phases is usually modelled by the fourth order nonlinear Cahn-Hilliard equation
 \begin{flalign} \label{eq:cahnhilliard}
@@ -1642,12 +1785,12 @@ simulation:
       - Cahn_Hilliard: c_dot=D*sph_L0(mu,mass,rho0,Wp32220,csize)
       - integration: c=euler(c,c_dot,dt)
       - new_dt: dt=CFL*min(1/fmax(c_dot),dt_g)
-      - print: print_interval=exp(Time/45)
   parameter_space:
     simulated_time: 150
-    print_interval: 0.001
+    print_interval: exp(Time/45)
     confirm_on_exit: false
     output_format: BINARY
+    compile_case: true
 \end{lstlisting}
 \end{example}
 The phase separation process has a decaying intensity in the function of time, therefore the printing interval is adaptively modified with an exponential law to minimize the amount of simulation result files and keep the temporal sampling appropriate at the same time. The evolution of phase separation is shown in Figure \ref{fig:cahnhilliard_result} by the triangulation of the surface.
@@ -1680,7 +1823,7 @@ $M$ & Tank mass & $20$ kg \\
 $s$ & Spring stiffness & $78956.8$ kg/s$^2$ \\
 $R$ & Particle radius & $4$ mm \\
 $L$ & Tank edge length & $0.1$ m \\
-$\rho$ & Particle mass density & $7850$ kg/m$^3$ \\
+$\rho$ & Particle mass & $7850$ kg/m$^3$ \\
 $E$ & Particle Young modulus & $2.06$ MPa \\
 $\nu$ & Particle Poisson's ratio & $0.33$ \\
 $g$ & Gravitational acceleration & $-9.81$ m/s${^2}$ \\
@@ -1752,6 +1895,8 @@ simulation:
         - a: 0|0|0
         - v: rand(-0.2,0.2)|rand(-0.2,0.2)|rand(-0.2,0.2)
         - om: 0|0|0
+        - bottom: Z-0.05
+        - top: Z+0.05
     equations:
       - time: T=T+dt
       - eq: a=dem_l(v,om,R,mass,E,nu,0.1)/mass
@@ -1760,11 +1905,14 @@ simulation:
       - ia: r=euler(r,v,dt)
       - tank_velocity: V=euler(V,A,dt)
       - tank_position: Z=euler(Z,V,dt)
+      - bottom: bottom=Z-0.05
+      - top: top=Z+0.05
   parameter_space:
     simulated_time: 1
     print_interval: 10*dt
     confirm_on_exit: 0
     output_format: ASCII
+    compile_case: true
 \end{lstlisting}
 \end{example}
 After running the configuration file in Nauticle the individual particle elevations are visualized in Figure \ref{fig:particle_damper_result} together with the bottom and top positions of the tank.
@@ -1876,6 +2024,7 @@ simulation:
     print_interval: dt
     confirm_on_exit: 0
     output_format: ASCII
+    compile_case: true
 \end{lstlisting}
 \end{example}
 \end{samepage}
@@ -1978,6 +2127,7 @@ simulation:
     print_interval: 365.25 # Print results in every year
     confirm_on_exit: 0
     output_format: ASCII
+    compile_case: true
 \end{lstlisting}
 \end{example}
 \end{samepage}
@@ -1992,7 +2142,7 @@ Theoretically, the total amount of energy in the Solar system remains constant, 
 Apart from the fluctuation, the total energy is preserved using the Velocity-Verlet integrator.
 
 
-\subsection{Dam-break problem}
+\subsection{Dam-break problem} \label{Dam-break_problem}
 \subsubsection{Problem definition}
 One of the most famous test cases of SPH is the two dimensional dam-break flow inside a rectangular, initially dry tank presented in Figure \ref{fig:dambreak_geom}.
 \begin{figure}[H]
@@ -2046,6 +2196,7 @@ simulation:
         - fluid: 0
         - wall: 1
         - CFL: 0.2
+        - xi: 0.1
       variables:
         - dt: 0.0001
         - T: 0
@@ -2088,12 +2239,12 @@ simulation:
     equations:
       - time: T=T+dt
       - cont: rho_dot=-rho*sph_D00(v,mass,rho,Wp52220,csize)
-      - delta_sph: rho_dot=rho_dot+0.1*c*h*sph_L0(rho,mass,rho,Wp52220,csize)
+      - delta_sph: rho_dot=rho_dot+xi*c*h*sph_L0(rho,mass,rho,Wp52220,csize)
       - irho0: rho=euler(rho,rho_dot,dt)
       - EOS0: p=c^2*(rho-rho0)
       - acc0: a=-1/rho*(sph_G11(p,mass,rho,Wp32220,csize)+sph_T(dx,p,mass,rho,Wp32220,csize))+g
         condition: eq(gid,fluid)
-      - acc1: a=a+0.1*c*h*sph_A(v,mass,rho,Wp32220,csize)
+      - acc1: a=a+xi*c*h*sph_A(v,mass,rho,Wp32220,csize)
         condition: eq(gid,fluid)
       - vel0: v=euler(v,a,dt)
         condition: eq(gid,fluid)
@@ -2105,6 +2256,7 @@ simulation:
     print_interval: 0.02
     confirm_on_exit: 0
     output_format: ASCII
+    compile_case: true
 \end{lstlisting}
 \end{example}
 \end{samepage}
@@ -2131,6 +2283,140 @@ Running the simulation of the collapse of the fluid column takes a while. Nevert
   \label{fig:dam_break_results}
 \end{figure}\vspace*{3pt}
 
+\subsection{Dam-break problem with adaptive spatial resolution} \label{sec:SPH_adaptive}
+Similarly to the former test case in section \ref{Dam-break_problem}, this example simulates a transient two-dimensional flow of a fluid body initially at rest. However, in the present section, the similar problem is modelled using an adaptive spatial resolution using the particle splitting and merging algorithm discussed in section \ref{splitting_merging}. Since the mathematical model is identical with the former example, the model definition is omitted here and merely the configuration file and the results are presented.
+\begin{samepage}
+\begin{example}{SPH dam-break with adaptive spatial resolution}{}
+\lstset{basicstyle=\tiny}
+\begin{lstlisting}[language=YAML]
+simulation:
+  case:
+    workspace:
+      constants:
+        - Lx: 2
+        - Ly: 1
+        - H: 0.4
+        - W: H*2
+        - csize: Lx/100
+        - dx: csize/2.1
+        - rho0: 1000
+        - g: 0|-9.81
+        - c: 10*sqrt(H*magnitude(g))
+        - fluid: 0
+        - wall: 1
+        - CFL: 0.2
+        - bmin_x: 0.6
+        - bmin_y: -Ly/2-csize
+        - bmax_x: Lx/2+csize
+        - bmax_y: -Ly/2+0.3
+      variables:
+        - dt: 0.0001
+        - T: 0
+      particle_system:
+        domain:
+          cell_size: csize|csize
+          minimum: -Lx/2/csize-2|-Ly/2/csize-1
+          maximum: Lx/2/csize+2|2*Ly/csize
+          boundary: 0|0
+        grid:
+          gid: fluid
+          gpos: -Lx/2|-Ly/2
+          gsize: W|H
+          goffset: 0|0
+          gip_dist: dx|dx
+        grid:
+          gid: wall
+          gpos: -Lx/2-csize|-Ly/2-csize
+          gsize: csize|Ly+2*csize
+          goffset: 0|0
+          gip_dist: dx|dx
+        grid:
+          gid: wall
+          gpos: -Lx/2|-Ly/2-csize
+          gsize: Lx|csize
+          goffset: 0|0
+          gip_dist: dx|dx
+        grid:
+          gid: wall
+          gpos: Lx/2|-Ly/2-csize
+          gsize: csize|Ly+2*csize
+          goffset: 0|0
+          gip_dist: dx|dx
+      fields:
+        - norm: 0
+        - mass: dx^2*rho0
+        - h: csize/2
+        - a: 0|0
+        - v: 0|0
+        - rho: if(eq(gid,fluid),elem(g,1,0)*rho0*(elem(r,1,0)-H+Ly/2)/c^2+rho0,rho0)
+        - rho_dot: 0
+        - p: 0
+    equations:
+      - normalization: norm=sph_S(1,mass,rho,Wp52220,2*h)
+      # continuity equation
+      - cont: rho_dot=-rho*sph_D00(v,mass,rho,Wp52220,2*h)/norm
+      - delta_sph: rho_dot=rho_dot+0.5*c*h*sph_L0(rho,mass,rho,Wp52220,2*h)/norm
+      - irho0: rho=euler(rho,rho_dot,dt)
+      # equation of state
+      - EOS0: p=c^2*(rho-rho0)
+      # momentum equation
+      - acc0: a=-1/rho*sph_G11(p,mass,rho,Wp52220,2*h)/norm+\
+      0.1*c*h*sph_A(v,mass,rho,Wp52220,2*h)/norm+g
+        condition: eq(gid,fluid)
+      # integration and new time step
+      - vel0: v=euler(v,a,dt)
+        condition: eq(gid,fluid)
+      - pos0: r=euler(r,v,dt)
+        condition: eq(gid,fluid)
+      - time: T=T+dt
+      - new_dt: dt=CFL*min(sqrt(fmin(h/magnitude(a))),fmin(h)/c)
+      - set_rho: rho=if(lt(rho,985),rho0,rho)
+  parameter_space:
+    simulated_time: 2
+    print_interval: 0.01
+    confirm_on_exit: 0
+    output_format: ASCII
+    file_start: 0
+    compile_case: true
+  splitter:
+    condition: if(gt(elem(r,0,0),bmin_x)*lt(elem(r,0,0),bmax_x)*gt(elem(r,1,0),bmin_y)*\
+    lt(elem(r,1,0),bmax_y),1,0)*eq(T,0)*eq(gid,wall)
+    radius_field: h
+    rotation: pi/4
+    mass_field: mass
+    smoothing_ratio: 1/sqrt(4)
+    separation_parameter: 0.35
+    daughters: 4
+    parent: 0
+    period: 1e10
+  splitter:
+    condition: if(gt(elem(r,0,0),bmin_x)*lt(elem(r,0,0),bmax_x)*gt(elem(r,1,0),bmin_y)*\
+    lt(elem(r,1,0),bmax_y),1,0)*eq(gid,fluid)*gt(mass,dx^2*rho0/2)
+    rotation: rand(-pi,pi)
+    radius_field: h
+    mass_field: mass
+    smoothing_ratio: 1/sqrt(7)
+    separation_parameter: 0.4
+    daughters: 7
+    parent: 1
+    period: 1
+  merger:
+    condition: if(lt(elem(r,0,0),bmin_x-dx)+gt(elem(r,0,0),bmax_x+dx)+lt(elem(r,1,0),bmin_y-dx)+\
+    gt(elem(r,1,0),bmax_y+dx),1,0)*neq(gid,wall)*lt(mass,dx^2*rho0*0.8)
+    radius_field: h
+    mass_field: mass
+    velocity_field: v
+    period: 1
+    neighbor_condition: neq(gid,wall)
+\end{lstlisting}
+\end{example}
+\end{samepage}
+\begin{figure}[H]
+  \includegraphics[scale=0.4]{adaptive_dam_break_results.pdf}
+  \centering
+  \caption{The lower right corner of the tank in different time instants.}
+  \label{fig:stefan_problem_beam}
+\end{figure}\vspace*{3pt}
 
 \subsection{Stefan-problem}
 \subsubsection{Problem definition}
@@ -2238,6 +2524,7 @@ simulation:
     print_interval: 50*dt
     confirm_on_exit: 0
     output_format: ASCII
+    compile_case: true
 \end{lstlisting}
 \end{example}
 \end{samepage}
@@ -2382,6 +2669,7 @@ simulation:
     confirm_on_exit: 0
     file_start: 0
     output_format: ASCII
+    compile_case: true
 \end{lstlisting}
 \end{example}
 \end{samepage}
@@ -2403,7 +2691,7 @@ Consider a two-dimensional square-shaped domain with edge size $L=20$ m, in whic
   \caption{Initial condition of the particle layout in the square domain.}
   \label{fig:MD_ic}
 \end{figure}\vspace*{3pt}
-The particle mass, the radii $\sigma$ and the interaction magnitudes $\epsilon$ are considered to be one, and $r_{cut}=3$ m. According to the Lennard-Jones potential, the system of particles can be written as:
+The particle mass the radii $\sigma$ and the interaction magnitudes $\epsilon$ are considered to be one, and $r_{cut}=3$ m. According to the Lennard-Jones potential, the system of particles can be written as:
 \begin{flalign}
 \frac{dv_i}{dt}=-\sum_{j\neq i}{\frac{48\epsilon}{\vert\textbf{r}_{ji}\vert^2}\bigg(\bigg(\frac{\sigma}{\vert\textbf{r}_{ji}\vert}\bigg)^{12}-\frac{1}{2}\bigg(\frac{\sigma}{\vert\textbf{r}_{ji}\vert}\bigg)^6\bigg)\textbf{r}_{ji}},
 \end{flalign}
@@ -2442,6 +2730,7 @@ simulation:
   parameter_space:
     simulated_time: 10
     print_interval: 0.1
+    compile_case: true
 \end{lstlisting}
 \end{example}
 \end{samepage}
@@ -2533,6 +2822,9 @@ Declares / defines the class from which the minimum, maximum, mean, and sum inte
 \textbf{pmFsum.h / pmFsum.cpp} \\
 Declares / defines the class that calculates the sum of the given field.
 
+\textbf{pmKuramoto\_operator.h / pmKuramoto\_operator.cpp} \\
+Declares / defines the class that calculates the Kuramoto synchronizer term of the given field.
+
 
 \subsection{Input/Output files}
 
@@ -2554,8 +2846,11 @@ Declares / defines the class for writing functions.
 
 \subsection{Files of simulation case}
 
+\textbf{pmBackground.h / pmBackground.cpp} \\
+Declares / defines the class representing a field represented over an unstructured grid.
+
 \textbf{pmCase.h / pmCase.cpp} \\
-Declares / defines the case class representing  simulation case.
+Declares / defines the case class representing simulation case.
 
 \textbf{pmSimulation.h / pmSimulation.cpp} \\
 Declares / defines the class for simulation management like solution of equations and writing results.
@@ -2605,7 +2900,7 @@ Declares / defines the class that implements the third order kernel function.
 \textbf{pmFifth\_order\_kernel.h} \\
 Declares / defines the class that implements the fifth order kernel function.
 
-\textbf{pmGaussian\_order\_kernel.h} \\
+\textbf{pmGaussian\_kernel.h} \\
 Declares / defines the class that implements the gaussian kernel function.
 
 \textbf{pmMath\_parser.h / pmMath\_parser.cpp} \\
@@ -2635,6 +2930,22 @@ Declares / defines the class that performs the parsing of user-defined expressio
 \textbf{pmWorkspace.h / pmWorkspace.cpp} \\
 Declares / defines the class for the workspace that keeps the simulation data defined by the user.
 
+\subsubsection{Files of the precompilation and dynamic linking.}
+
+\textbf{pmInterface.h} \\
+Declares / defines the interface class for the dynamically linking.
+
+\textbf{pmRuntime\_compiler.h / pmRuntime\_compiler.cpp} \\
+Declares / defines the interface class for the dynamically linking.
+
+\textbf{pmParticle\_modifier.h} \\
+Declares / defines the base class for particle splitting and merging (abstract class).
+
+\textbf{pmParticle\_merger.h / pmParticle\_merger.cpp} \\
+Declares / defines the class performing particle merging.
+
+\textbf{pmParticle\_splitter.h / pmParticle\_splitter.cpp} \\
+Declares / defines the class performing particle splitting.
 
 \subsection{Further files}
 
@@ -2656,15 +2967,21 @@ Collection of required constants.
 \textbf{pmVersion.h} \\
 Defines the major and minor version numbers of Nauticle.
 
+\textbf{pmCounter.h} \\
+Declares / defines the class for counting objects of inherited types.
+
+\textbf{pmSmallest.h} \\
+Declares / defines the class to find the N smallest value of a set.
 
 \section{Nauticle future}
 The development of Nauticle is started around the second half of 2015. Initially, the code was built up using former particle-based algorithms written by the author. After the implementation of the solver core following the basic ideas aiming generality, the software became a useful simulation tool in several research areas. However, being a small and new project, further developments are required to extend the capabilities of the solver.
 
 The following features are planned to be included in the next versions of Nauticle:
 \begin{enumerate}
-\item Generation and runtime compilation of user-defined equations to increase computational efficiency.
+\item Extending runtime C++ code generation to massively parallel GPGPU devices.
 \item Extend the environment for implicit meshless schemes.
 \item Implementation of particle sources and sinks.
+\item Quad-tree or kd-tree resolution of computational domain for more efficient neighbor search in simluations with varying particle sizes.
 \end{enumerate}
 
 \bibliographystyle{elsarticle-num}
@@ -2686,7 +3003,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 
 \subsection{LGPL license}
 \noindent
-Copyright \textcopyright{} 2016-2017 Balazs Toth \\
+Copyright \textcopyright{} 2016-2019 Balazs Toth \\
 \noindent
 BME Budapest University of Technology and Economics, Department of Hydraulic and Water Resources Engineering.\\
 All rights reserved. \\
